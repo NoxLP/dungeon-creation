@@ -1,5 +1,6 @@
 import { randomBetweenRange } from "../helpers/random.js";
 import { simpleGetProxy } from "../helpers/proxy.js";
+import { Room } from "./Room.js";
 
 export class Generator {
   _containerWidth;
@@ -43,5 +44,9 @@ export class Generator {
 
 
     // }
+  }
+
+  coordsAreInRoom(coords, room) {
+
   }
 }
