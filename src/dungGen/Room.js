@@ -1,28 +1,32 @@
-export class Room {
-  _topLeftCoords;
-  _bottomRightCoords;
+import { simpleGetProxy } from "../helpers/proxy.js";
 
-  constructor(topLeft, bottomRight) {
-    if (!topLeft
-      || !bottomRight
-      || !Array.isArray(topLeft)
-      || !Array.isArray(bottomRight)
-      || topLeft.length != 2
-      || bottomRight.length != 2)
-      throw new Exception('Bad room coordinates')
-    this._topLeftCoords = topLeft
-    this._bottomRightCoords = bottomRight
+export function Room(topLeft, bottomRight) {
+  if (!topLeft
+    || !bottomRight
+    || !Array.isArray(topLeft)
+    || !Array.isArray(bottomRight)
+    || topLeft.length != 2
+    || bottomRight.length != 2)
+    throw new Error('Bad room coordinates')
+
+  const topLeftCoords = topLeft
+  const bottomRightCoords = bottomRight
+
+  this.topLeft = simpleGetProxy(topLeftCoords)
+  this.topRight = simpleGetProxy([bottomRightCoords[0], topLeftCoords[1]])
+  this.bottomRight = simpleGetProxy(bottomRightCoords)
+  this.bottomLeft = simpleGetProxy([topLeftCoords[0], bottomRightCoords[1]])
+
+  this.isInside = (coords) =>
+    coords[0] >= topLeftCoords[0] && coords[0] <= bottomRightCoords[0]
+    && coords[1] >= topLeftCoords[1] && coords[1] <= bottomRightCoords[1]
+  this.doForAllCoordsInside = (callback) => {
+    for (let i = topLeftCoords[0]; i <= bottomRightCoords[0]; i++) {
+      for (let j = topLeftCoords[1]; j < bottomRightCoords[1]; j++) {
+        callback([i, j])
+      }
+    }
   }
 
-  get topLeft() {
-    return simpleGetProxy(this._topLeftCoords)
-  }
-  get bottomRight() {
-    return simpleGetProxy(this._bottomRightCoords)
-  }
-
-  isInside(coords) {
-    return coords[0] >= this._topLeftCoords[0] && coords[0] <= this._bottomRightCoords[0]
-      && coords[1] >= this._topLeftCoords[1] && coords[1] <= this._bottomRightCoords[1]
-  }
+  return this
 }

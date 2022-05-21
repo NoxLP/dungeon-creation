@@ -1,52 +1,99 @@
-import { randomBetweenRange } from "../helpers/random.js";
-import { simpleGetProxy } from "../helpers/proxy.js";
 import { Room } from "./Room.js";
+import { intRandomBetweenRange } from "../helpers/random.js";
+import { simpleGetProxy } from "../helpers/proxy.js";
 
-export class Generator {
-  _containerWidth;
-  _containerHeight;
-  _roomMaxSize;
-  _roomMinSize;
-  _rooms;
-  _cells;
+// yeah, I could use classes... I wouldn't have private members and
+// I don't need typescript
+export function Generator(width, height, config) {
+  // ****************** private fields
+  const containerWidth = width;
+  const containerHeight = height;
+  const roomMaxSize = !config
+    ? [30, 30]
+    : config.roomMaxSize
+      ? config.roomMaxSize
+      : [30, 30];
+  const roomMinSize = !config
+    ? [15, 15]
+    : config.roomMinSize
+      ? config.roomMinSize
+      : [15, 15];
+  const rooms = [];
+  const emptyCells = {};
+  const roomCells = {};
 
-  constructor(width, height, config) {
-    this._containerWidth = width
-    this._containerHeight = height
+  // ****************** public fields
+  this.rooms = simpleGetProxy(rooms)
 
-    if (config) {
-      if (config.roomMaxSize) this._roomMaxSize = config.roomMaxSize
-      if (config.roomMinSize) this._roomMinSize = config.roomMinSize
-    } else {
-      this._roomMaxSize = [15, 15]
-      this._roomMinSize = [5, 5]
+  // ****************** private methods
+  const buildCellKey = (...coords) => `${coords[0]},${coords[1]}`
+  const isInsideARoom = (coords) => buildCellKey(coords) in roomCells
+  const addRoom = (room) => {
+    rooms.push(room)
+    room.doForAllCoordsInside((coords) => {
+      const coordKey = buildCellKey(coords)
+      if (coordKey in emptyCells) delete emptyCells[coordKey]
+      roomCells[coordKey] = true
+    })
+  }
+  const cornersAreInsideARoom = (coords, width, height) => {
+    return isInsideARoom(coords) || //topleft
+      isInsideARoom([coords[0] + width, coords[1]]) || //topright
+      isInsideARoom([coords[0] + width, coords[1] + height]) || //botright
+      isInsideARoom([coords[0], coords[1] + height]) //botleft
+  }
+  const createRoomNotInsideSomeRoom = (width, height) => {
+    let coords
+    let tries = 0
+
+    while (tries < 10) {
+      tries++
+      coords = [
+        intRandomBetweenRange(0, containerWidth),
+        intRandomBetweenRange(0, containerHeight)
+      ]
+      if (!cornersAreInsideARoom(coords, width, height))
+        return new Room(coords, [coords[0] + width, coords[1] + height])
     }
 
-    this._rooms = [new Room([0, 0], [10, 10]), new Room([15, 15], [20, 20])]
-    this._cells = []
+    return null
+  }
+  const generateRooms = (maxRooms) => {
+    const testedHeights = {}
+    const testedWidths = {}
+    let badTries = 0
+
+    while (rooms.length < maxRooms && badTries < 10) {
+      const currentRoomWidth = intRandomBetweenRange(
+        roomMinSize[0],
+        roomMaxSize[0],
+        testedWidths
+      )
+      const currentRoomHeight = intRandomBetweenRange(
+        roomMinSize[1],
+        roomMaxSize[1],
+        testedHeights
+      )
+
+      const room = createRoomNotInsideSomeRoom(currentRoomWidth, currentRoomHeight)
+      if (!room) {
+        badTries++
+        continue
+      }
+
+      addRoom(room)
+      badTries = 0
+    }
+  }
+  // ******************
+
+  for (let i = 0; i < width; i++) {
+    for (let j = 0; j < height; j++) {
+      emptyCells[buildCellKey(i, j)] = true
+    }
   }
 
-  get rooms() {
-    return simpleGetProxy(this._rooms)
-  }
+  generateRooms(10)
 
-  generate() {
-
-  }
-
-  generateRooms() {
-    // let stop = false;
-    // let currentHeight, currentWidth
-
-    // while (!stop) {
-    //   currentHeight = Math.floor(randomBetweenRange(this._roomMinSize[0], this._roomMaxSize[0]))
-    //   currentWidth = Math.floor(randomBetweenRange(this._roomMinSize[1], this._roomMaxSize[1]))
-
-
-    // }
-  }
-
-  isInsideSomeRoom(coords) {
-    return this._rooms.some((r) => r.isInside(coords))
-  }
+  return this
 }
