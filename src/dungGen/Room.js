@@ -21,7 +21,7 @@ export class Room {
     return simpleGetProxy(this._bottomRightCoords)
   }
 
-  coordsAreInside(coords) {
+  isInside(coords) {
     return coords[0] >= this._topLeftCoords[0] && coords[0] <= this._bottomRightCoords[0]
       && coords[1] >= this._topLeftCoords[1] && coords[1] <= this._bottomRightCoords[1]
   }

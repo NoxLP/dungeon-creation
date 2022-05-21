@@ -10,5 +10,8 @@ console.log(generator.rooms);
 
 const testRoom = new Room([0, 0], [10, 10])
 console.log(testRoom);
+console.log('HERE----: ', testRoom.isInside([2, 2]))
 
-console.log('HERE----: ', testRoom.coordsAreInside([2, 2]))
+console.log(generator.isInsideSomeRoom([2, 2]));
+console.log(generator.isInsideSomeRoom([12, 12]));
+console.log(generator.isInsideSomeRoom([18, 18]));

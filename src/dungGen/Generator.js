@@ -22,7 +22,7 @@ export class Generator {
       this._roomMinSize = [5, 5]
     }
 
-    this._rooms = []
+    this._rooms = [new Room([0, 0], [10, 10]), new Room([15, 15], [20, 20])]
     this._cells = []
   }
 
@@ -46,7 +46,7 @@ export class Generator {
     // }
   }
 
-  coordsAreInRoom(coords, room) {
-
+  isInsideSomeRoom(coords) {
+    return this._rooms.some((r) => r.isInside(coords))
   }
 }
