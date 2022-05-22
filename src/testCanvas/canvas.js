@@ -1,4 +1,4 @@
-const RATIO_ADJUST = 0.9
+const RATIO_ADJUST = 1
 const canvas = document.getElementById('container')
 const ctx = canvas.getContext ? canvas.getContext('2d') : undefined
 let ratio = [1, 1]
@@ -15,7 +15,26 @@ const applyRatio = (num, coord) => {
   if (coord == 'y') return num * ratio[1] * RATIO_ADJUST
   return undefined
 }
-
+export function drawGrid(width, height) {
+  if (ctx) {
+    for (let i = 0; i < width; i++) {
+      if (i % 10 == 0) ctx.fillStyle = ctx.strokeStyle = 'rgb(120,120,120)'
+      else ctx.strokeStyle = 'rgb(190,190,190)'
+      ctx.beginPath()
+      ctx.moveTo(applyRatio(i, 'x'), 0)
+      ctx.lineTo(applyRatio(i, 'x'), applyRatio(height, 'y'))
+      ctx.stroke()
+    }
+    for (let i = 0; i < height; i++) {
+      if (i % 10 == 0) ctx.fillStyle = ctx.strokeStyle = 'rgb(120,120,120)'
+      else ctx.strokeStyle = 'rgb(190,190,190)'
+      ctx.beginPath()
+      ctx.moveTo(0, applyRatio(i, 'y'))
+      ctx.lineTo(applyRatio(width, 'y'), applyRatio(i, 'y'))
+      ctx.stroke()
+    }
+  }
+}
 export function drawRoom(room) {
   if (ctx) {
     ctx.fillStyle = 'rgb(0,255,0)'

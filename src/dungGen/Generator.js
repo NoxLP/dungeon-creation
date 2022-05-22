@@ -24,6 +24,7 @@ export function Generator(width, height, config) {
   const rooms = [];
   const emptyCells = {};
   const roomCells = {};
+  const maxTries = width / 2
 
   // ****************** public fields
   this.rooms = simpleGetProxy(rooms)
@@ -35,7 +36,6 @@ export function Generator(width, height, config) {
     coords[0] > 0 && coords[0] < containerWidth
     && coords[1] > 0 && coords[1] < containerHeight
   const buildCellKey = (coords) => `${coords[0]},${coords[1]}`
-  const isInsideARoom = (coords) => buildCellKey(coords) in roomCells
   const addRoom = (room) => {
     rooms.push(room)
     room.doForAllCoordsInside((coords) => {
@@ -44,29 +44,22 @@ export function Generator(width, height, config) {
       roomCells[coordKey] = true
     })
   }
-  // const cornersAreInsideARoom = (coords, width, height) => {
-  //   return isInsideARoom(coords) || //topleft
-  //     isInsideARoom([coords[0] + width, coords[1]]) || //topright
-  //     isInsideARoom([coords[0] + width, coords[1] + height]) || //botright
-  //     isInsideARoom([coords[0], coords[1] + height]) //botleft
-  // }
   const someRoomOverlap = (room) => rooms.some((r) => room.roomOverlap(r))
 
   const createRoomNotInsideSomeRoom = (width, height) => {
-    let coords
     let tries = 0
 
-    while (tries < 10) {
+    while (tries < maxTries) {
       tries++
-      coords = [
+      const topLeftCoords = [
         intRandomBetweenRange(0, containerWidth),
         intRandomBetweenRange(0, containerHeight)
       ]
 
-      const bottomRightCoords = [coords[0] + width, coords[1] + height]
+      const bottomRightCoords = [topLeftCoords[0] + width, topLeftCoords[1] + height]
       if (!coordsAreInsideMap(bottomRightCoords)) continue
 
-      const room = new Room(coords, bottomRightCoords)
+      const room = new Room(topLeftCoords, bottomRightCoords)
       if (someRoomOverlap(room)) continue
 
       return room
@@ -79,7 +72,7 @@ export function Generator(width, height, config) {
     const testedWidths = {}
     let badTries = 0
 
-    while (rooms.length < maxRooms && badTries < 10) {
+    while (rooms.length < maxRooms && badTries < maxTries) {
       const currentRoomWidth = intRandomBetweenRange(
         roomMinSize[0],
         roomMaxSize[0],
