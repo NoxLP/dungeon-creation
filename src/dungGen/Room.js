@@ -16,6 +16,10 @@ export function Room(topLeft, bottomRight) {
   this.topRight = simpleGetProxy([bottomRightCoords[0], topLeftCoords[1]])
   this.bottomRight = simpleGetProxy(bottomRightCoords)
   this.bottomLeft = simpleGetProxy([topLeftCoords[0], bottomRightCoords[1]])
+  this.center = simpleGetProxy([
+    Math.floor((bottomRightCoords[0] - topLeftCoords[0]) / 2) + topLeftCoords[0],
+    Math.floor((bottomRightCoords[1] - topLeftCoords[1]) / 2) + topLeftCoords[1],
+  ])
 
   this.isInside = (coords) =>
     coords[0] >= topLeftCoords[0] && coords[0] <= bottomRightCoords[0]
@@ -26,6 +30,19 @@ export function Room(topLeft, bottomRight) {
         callback([i, j])
       }
     }
+  }
+  this.roomOverlap = (other) => {
+    const xMax = bottomRightCoords[0]
+    const xMin = topLeftCoords[0]
+    const yMax = bottomRightCoords[1]
+    const yMin = topLeftCoords[1]
+    const otherxMax = other.bottomRight[0]
+    const otherxMin = other.topLeft[0]
+    const otheryMax = other.bottomRight[1]
+    const otheryMin = other.topLeft[1]
+
+    return xMax >= otherxMin && otherxMax >= xMin &&
+      yMax >= otheryMin && otheryMax >= yMin
   }
 
   return this
