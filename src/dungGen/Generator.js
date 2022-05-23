@@ -7,7 +7,7 @@ const ROOM_MIN_SIZE = [10, 10]
 
 // yeah, I could use classes... I wouldn't have private members and
 // I don't need typescript
-export function Generator(width, height, config) {
+export function Generator(width, height, config, finishCallback) {
   // ****************** private fields
   const containerWidth = width;
   const containerHeight = height;
@@ -24,7 +24,8 @@ export function Generator(width, height, config) {
   const rooms = [];
   const emptyCells = {};
   const roomCells = {};
-  const maxTries = width / 2
+  const maxTries = containerWidth * containerHeight * 0.25
+  console.log('MAXTRIES: ', maxTries);
 
   // ****************** public fields
   this.rooms = simpleGetProxy(rooms)
@@ -36,6 +37,11 @@ export function Generator(width, height, config) {
     coords[0] > 0 && coords[0] < containerWidth
     && coords[1] > 0 && coords[1] < containerHeight
   const buildCellKey = (coords) => `${coords[0]},${coords[1]}`
+  const getCoordsFromKey = (key) => {
+    const match = key.match(/^(\d+),(\d+)/)
+    if (match) return [parseInt(match[1]), parseInt(match[2])]
+    return null
+  }
   const addRoom = (room) => {
     rooms.push(room)
     room.doForAllCoordsInside((coords) => {
@@ -45,64 +51,68 @@ export function Generator(width, height, config) {
     })
   }
   const someRoomOverlap = (room) => rooms.some((r) => room.roomOverlap(r))
-
-  const createRoomNotInsideSomeRoom = (width, height) => {
-    let tries = 0
-
-    while (tries < maxTries) {
-      tries++
-      const topLeftCoords = [
-        intRandomBetweenRange(0, containerWidth),
-        intRandomBetweenRange(0, containerHeight)
-      ]
-
-      const bottomRightCoords = [topLeftCoords[0] + width, topLeftCoords[1] + height]
-      if (!coordsAreInsideMap(bottomRightCoords)) continue
-
-      const room = new Room(topLeftCoords, bottomRightCoords)
-      if (someRoomOverlap(room)) continue
-
-      return room
-    }
-
-    return null
-  }
+  const coordsAreInARoom = (coords) => this.roomCells[buildCellKey(coords)]
   const generateRooms = (maxRooms) => {
-    const testedHeights = {}
-    const testedWidths = {}
-    let badTries = 0
+    let tries = 0
+    let keys = Object.keys(emptyCells)
 
-    while (rooms.length < maxRooms && badTries < maxTries) {
-      const currentRoomWidth = intRandomBetweenRange(
-        roomMinSize[0],
-        roomMaxSize[0],
-        testedWidths
-      )
-      const currentRoomHeight = intRandomBetweenRange(
-        roomMinSize[1],
-        roomMaxSize[1],
-        testedHeights
+    while ((!maxRooms || rooms.length < maxRooms) && tries < maxTries) {
+      tries++
+      const topLeftCoords = getCoordsFromKey(
+        keys[intRandomBetweenRange(0, keys.length - 1)]
       )
 
-      const room = createRoomNotInsideSomeRoom(currentRoomWidth, currentRoomHeight)
-      if (!room) {
-        badTries++
-        continue
+      const testedHeights = {}
+      const testedWidths = {}
+      let sizeTries = 0
+      let room
+
+      while (sizeTries < maxTries) {
+        sizeTries++
+        const currentRoomWidth = intRandomBetweenRange(
+          roomMinSize[0],
+          roomMaxSize[0],
+          testedWidths
+        )
+        const currentRoomHeight = intRandomBetweenRange(
+          roomMinSize[1],
+          roomMaxSize[1],
+          testedHeights
+        )
+        const bottomRightCoords = [
+          topLeftCoords[0] + currentRoomWidth,
+          topLeftCoords[1] + currentRoomHeight
+        ]
+        if (!coordsAreInsideMap(bottomRightCoords)
+          || coordsAreInARoom(bottomRightCoords))
+          continue
+
+        room = new Room(topLeftCoords, bottomRightCoords)
+        if (someRoomOverlap(room)) {
+          room = undefined
+          continue
+        }
       }
 
-      addRoom(room)
-      badTries = 0
+      if (room) {
+        addRoom(room)
+        keys = Object.keys(emptyCells)
+      }
     }
   }
+
   // ******************
 
   for (let i = 0; i < containerWidth; i++) {
     for (let j = 0; j < containerHeight; j++) {
-      emptyCells[buildCellKey(i, j)] = true
+      emptyCells[buildCellKey([i, j])] = true
     }
   }
 
-  generateRooms(10)
+  generateRooms(
+    config && config.maxRooms ? config.maxRooms : undefined
+  )
 
+  if (finishCallback) finishCallback()
   return this
 }

@@ -9,7 +9,9 @@ const gridY = 50
 const generator = new Generator(gridX, gridY, {
   roomMaxSize: [15, 15],
   roomMinSize: [5, 5],
-})
+  //maxRooms: 30
+},
+  () => document.getElementById('generando').style.display = 'none')
 setRatio(gridX, gridY)
 drawGrid(gridX, gridY)
 
