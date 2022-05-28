@@ -85,6 +85,8 @@ export async function Generator(width, height, config, finishCallback) {
 
       for (let i = start; i < end; i++) {
         currentCoords = buildCoords(i)
+        if (!coordsAreInsideMap(currentCoords))
+          continue
         if (coordsAreInARoom(currentCoords)) {
           const room = Object(values).find((r) => r.isInside(currentCoords))
           if (room && !foundRooms[room.id])
@@ -143,6 +145,8 @@ export async function Generator(width, height, config, finishCallback) {
       while (!found && i < end) {
         i++
         currentCoords = buildCoords(i)
+        if (!coordsAreInsideMap(currentCoords))
+          continue
         if (coordsAreInARoom(currentCoords)) {
           const room = Object.values(rooms).find((r) => r.isInside(currentCoords))
           if (room) {
