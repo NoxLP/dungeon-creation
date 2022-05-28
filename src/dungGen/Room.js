@@ -1,5 +1,7 @@
 import { simpleGetProxy } from "../helpers/proxy.js";
 
+let currentMaxId = 0
+
 export function Room(topLeft, bottomRight) {
   if (!topLeft
     || !bottomRight
@@ -12,6 +14,8 @@ export function Room(topLeft, bottomRight) {
   const topLeftCoords = topLeft
   const bottomRightCoords = bottomRight
 
+  this.id = currentMaxId
+  currentMaxId++
   this.topLeft = simpleGetProxy(topLeftCoords)
   this.topRight = simpleGetProxy([bottomRightCoords[0], topLeftCoords[1]])
   this.bottomRight = simpleGetProxy(bottomRightCoords)
@@ -32,18 +36,30 @@ export function Room(topLeft, bottomRight) {
     }
   }
   this.roomOverlap = (other) => {
-    const xMax = bottomRightCoords[0]
-    const xMin = topLeftCoords[0]
-    const yMax = bottomRightCoords[1]
-    const yMin = topLeftCoords[1]
-    const otherxMax = other.bottomRight[0]
-    const otherxMin = other.topLeft[0]
-    const otheryMax = other.bottomRight[1]
-    const otheryMin = other.topLeft[1]
+    const thisMinMax = this.getMinMaxCoords()
+    const otherMinMax = other.getMinMaxCoords()
 
-    return xMax >= otherxMin && otherxMax >= xMin &&
-      yMax >= otheryMin && otheryMax >= yMin
+    return thisMinMax.xMax >= otherMinMax.xMin &&
+      otherMinMax.xMax >= thisMinMax.xMin &&
+      thisMinMax.yMax >= otherMinMax.yMin &&
+      otherMinMax.yMax >= thisMinMax.yMin
   }
+  this.distanceXTo = (other) => {
+    const thisMinMax = this.getMinMaxCoords()
+    const otherMinMax = other.getMinMaxCoords()
+    return thisMinMax.xMax - otherMinMax.xMin
+  }
+  this.distanceYTo = (other) => {
+    const thisMinMax = this.getMinMaxCoords()
+    const otherMinMax = other.getMinMaxCoords()
+    return thisMinMax.yMax - otherMinMax.yMin
+  }
+  this.getMinMaxCoords = () => ({
+    xMax: bottomRightCoords[0],
+    xMin: topLeftCoords[0],
+    yMax: bottomRightCoords[1],
+    yMin: topLeftCoords[1],
+  })
 
   return this
 }
