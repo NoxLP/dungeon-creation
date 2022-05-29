@@ -5,6 +5,8 @@ import { simpleGetProxy } from "../helpers/proxy.js";
 const ROOM_MAX_SIZE = [20, 20]
 const ROOM_MIN_SIZE = [10, 10]
 const MIN_SPACE_BETWEEN_ROOMS = 0
+const MIN_SPACE_BETWEEN_CORRIDORS = 1
+const CORRIDORS_WIDTH = 1
 
 // yeah, I could use classes... I wouldn't have private members and
 // I don't need typescript
@@ -32,6 +34,16 @@ export async function Generator(width, height, config, finishCallback) {
     : config.minSpaceBetweenRooms
       ? config.minSpaceBetweenRooms
       : MIN_SPACE_BETWEEN_ROOMS
+  const minSpaceBetweenCorridors = !config
+    ? MIN_SPACE_BETWEEN_CORRIDORS
+    : config.minSpaceBetweenCorridors
+      ? config.minSpaceBetweenCorridors
+      : MIN_SPACE_BETWEEN_CORRIDORS
+  const corridorsWidth = !config
+    ? CORRIDORS_WIDTH
+    : config.corridorsWidth
+      ? config.corridorsWidth
+      : CORRIDORS_WIDTH
 
   // ****************** private methods
   const coordsAreInsideMap = (coords) =>
@@ -234,17 +246,43 @@ export async function Generator(width, height, config, finishCallback) {
 
     }
   }
-  const generateCorridors = () => {
-    let stop = false
-    let currentCoords = [0, 0]
-    let direction = [1, 0]
+  const canBeACorridor = (coords, horizontalCorridor) => {
+    const minSpace = minSpaceBetweenCorridors + corridorsWidth
+    const getCheckCoords = horizontalCorridor
+      ? (i) => ([[coords[0], coords[1] - i], [coords[0], coords[1] + i]])
+      : (i) => ([[coords[0] - i, coords[1]], [coords[0] + i, coords[1]]])
 
-    while (!stop) {
-      if (coordsAreInARoom(currentCoords)) {
-
-      }
-      stop = true
+    for (let i = 0; i < minSpace; i++) {
+      const checkCoords = getCheckCoords(i)
+      if (checkCoords.some((c) => !emptyCells[buildCellKey(c)]
+        || !coordsAreInsideMap(c)))
+        return false
     }
+
+    return true
+  }
+  const generateCorridor = (start) => {
+    let stop = false
+    let currentCoords = start
+    const nearNodes = [start]
+    let currentNode
+    const corridor = []
+
+    while (nearNodes.length > 0) {
+      currentNode = nearNodes.shift()
+      if (canBeACorridor(currentNode)) {
+        corridor.push(currentNode)
+        nearNodes.push([currentNode[0] - 1, currentNode[1]]) //W
+        nearNodes.push([currentNode[0] + 1, currentNode[1]]) //E
+        nearNodes.push([currentNode[0], currentNode[1] - 1]) //N
+        nearNodes.push([currentNode[0], currentNode[1] + 1]) //S
+      }
+    }
+
+    return corridor
+  }
+  const generateAllCorridors = () => {
+
   }
   // ******************
 
