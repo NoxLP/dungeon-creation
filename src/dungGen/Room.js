@@ -25,6 +25,10 @@ export function Room(topLeft, bottomRight) {
     Math.floor((bottomRightCoords[1] - topLeftCoords[1]) / 2) + topLeftCoords[1],
   ])
 
+  this.xMax = bottomRightCoords[0]
+  this.xMin = topLeftCoords[0]
+  this.yMax = bottomRightCoords[1]
+  this.yMin = topLeftCoords[1]
   this.isInside = (coords) =>
     coords[0] >= topLeftCoords[0] && coords[0] <= bottomRightCoords[0]
     && coords[1] >= topLeftCoords[1] && coords[1] <= bottomRightCoords[1]
@@ -35,31 +39,28 @@ export function Room(topLeft, bottomRight) {
       }
     }
   }
-  this.roomOverlap = (other) => {
-    const thisMinMax = this.getMinMaxCoords()
-    const otherMinMax = other.getMinMaxCoords()
-
-    return thisMinMax.xMax >= otherMinMax.xMin &&
-      otherMinMax.xMax >= thisMinMax.xMin &&
-      thisMinMax.yMax >= otherMinMax.yMin &&
-      otherMinMax.yMax >= thisMinMax.yMin
-  }
-  this.distanceXTo = (other) => {
-    const thisMinMax = this.getMinMaxCoords()
-    const otherMinMax = other.getMinMaxCoords()
-    return thisMinMax.xMax - otherMinMax.xMin
-  }
-  this.distanceYTo = (other) => {
-    const thisMinMax = this.getMinMaxCoords()
-    const otherMinMax = other.getMinMaxCoords()
-    return thisMinMax.yMax - otherMinMax.yMin
-  }
-  this.getMinMaxCoords = () => ({
-    xMax: bottomRightCoords[0],
-    xMin: topLeftCoords[0],
-    yMax: bottomRightCoords[1],
-    yMin: topLeftCoords[1],
-  })
+  this.roomOverlap = (other) =>
+    this.xMax >= other.xMin &&
+    other.xMax >= this.xMin &&
+    this.yMax >= other.yMin &&
+    other.yMax >= this.yMin
+  this.distanceXTo = (other) => this.xMax - other.xMin
+  this.distanceYTo = (other) => this.yMax - other.yMin
+  this.isInMargin = (coords) =>
+    (coords[1] <= this.yMax
+      && coords[1] >= this.yMin
+      && (
+        this.xMax + 1 == coords[0]
+        || this.xMin - 1 == coords[0]
+      )
+    )
+    || (coords[0] <= this.xMax
+      && coords[0] >= this.xMin
+      && (
+        this.yMax + 1 == coords[1]
+        || this.yMin - 1 == coords[1]
+      )
+    )
 
   return this
 }

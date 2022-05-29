@@ -70,6 +70,7 @@ export async function Generator(width, height, config, finishCallback) {
   }
   const someRoomOverlap = (room) => Object.values(rooms).some((r) => room.roomOverlap(r))
   const coordsAreInARoom = (coords) => roomCells[buildCellKey(coords)]
+  const coordsAreInRoomMargin = (coords) => Object.values(rooms).some((r) => r.isInMargin(coords))
   const locateNearRooms = async (room, distance) => {
     const roomCoords = {
       tl: [...room.topLeft],
@@ -275,7 +276,13 @@ export async function Generator(width, height, config, finishCallback) {
     const coordsAreOk = (c) =>
       emptyCells[buildCellKey(c)]
       && coordsAreInsideMapIncluding0(c)
-    if (!coordsAreOk(coords)) return false
+    if (!coordsAreOk(coords) || coordsAreInRoomMargin(coords)) {
+      console.log('In room margin: ', coordsAreInRoomMargin(coords))
+      console.log('Is empty: ', !!emptyCells[buildCellKey(coords)])
+      console.log('Is in map: ', coordsAreInsideMapIncluding0(coords))
+      console.groupEnd()
+      return false
+    }
 
     const minSpace = minSpaceBetweenCorridors + corridorsWidth
     const coordsAreInCorridor = (c) =>
@@ -293,6 +300,7 @@ export async function Generator(width, height, config, finishCallback) {
       ]
       console.log('c same dir ', checkCoords);
       console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+      console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
       console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
       console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
       if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
@@ -307,6 +315,7 @@ export async function Generator(width, height, config, finishCallback) {
         ]
         console.log('c perpendic ', checkCoords);
         console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+        console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
         console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
         console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
         if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
@@ -314,24 +323,6 @@ export async function Generator(width, height, config, finishCallback) {
           return false
         }
       }
-
-      // let direction = [1, 0]
-      // for (let d = 0; d < 4; d++) {
-      //   direction = changeDirectionClockWise(direction)
-      //   let checkCoords = [
-      //     coords[0] + (direction[0] * i),
-      //     coords[1] + (direction[1] * i)
-      //   ]
-      //   if (isLastNode(checkCoords)) continue
-      //   console.log('c ', checkCoords);
-      //   console.log('In corridor: ', coordsAreInCorridor(checkCoords))
-      //   console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
-      //   console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
-      //   if (coordsAreInCorridor(checkCoords) || !coordsAreOk(checkCoords)) {
-      //     console.groupEnd()
-      //     return false
-      //   }
-      // }
     }
     console.groupEnd()
 
@@ -413,7 +404,7 @@ export async function Generator(width, height, config, finishCallback) {
       console.log('CURRENT NODE ', currentNode);
       console.log('last NODE ', lastNode);
       if (canBeACorridor(currentNode, corridor, lastNode, direction)) {
-        console.log('YES canBeACorridor')
+        console.log('YES canBeACorridor ', currentNode)
         console.log('direction: ', direction)
         addNodeToCorridor(currentNode)
         //nearNodes = []
