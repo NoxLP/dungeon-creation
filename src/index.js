@@ -1,6 +1,6 @@
 import { Generator } from "./dungGen/Generator.js";
 import { Room } from "./dungGen/Room.js";
-import { drawRoom, drawGrid, setRatio } from "./testCanvas/canvas.js";
+import { drawRoom, drawCorridor, drawGrid, setRatio } from "./testCanvas/canvas.js";
 
 const container = document.getElementById('container')
 
@@ -14,6 +14,7 @@ const generator = await Generator(gridX, gridY, {
   //maxRooms: 30
 },
   () => document.getElementById('generando').style.display = 'none')
+window.generator = generator
 setRatio(gridX, gridY)
 drawGrid(gridX, gridY)
 
@@ -30,7 +31,7 @@ console.log('HERE----: ', testRoom.isInside([2, 2]))
 console.log('FIND ROOM----: ')
 
 //generator.generateRooms()
-console.group('GENERATED ROOMS')
+console.groupCollapsed('GENERATED ROOMS')
 Object.values(generator.rooms).forEach((r) => {
   console.log(`FROM: ${r.topLeft}`)
   console.log(`TO: ${r.bottomRight}`)
@@ -38,3 +39,5 @@ Object.values(generator.rooms).forEach((r) => {
   drawRoom(r)
 })
 console.groupEnd()
+console.log(generator.corridors);
+generator.corridors.forEach((c) => drawCorridor(Object.values(c)))

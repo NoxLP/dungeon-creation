@@ -54,3 +54,17 @@ BR: ${room.bottomRight}`,
     )
   }
 }
+export function drawCorridor(corridor, corridorWidth) {
+  if (ctx) {
+    ctx.fillStyle = 'rgb(205,127,50)'
+    corridor.forEach((c) => {
+      ctx.fillRect(
+        applyRatio(c[0], 'x'),
+        applyRatio(c[1], 'y'),
+        //Right now, width is always 1
+        applyRatio(1, 'x'),
+        applyRatio(1, 'y'),
+      )
+    })
+  }
+}
