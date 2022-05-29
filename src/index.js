@@ -10,7 +10,7 @@ const generator = await Generator(gridX, gridY, {
   roomMaxSize: [15, 15],
   roomMinSize: [5, 5],
   minSpaceBetweenRooms: 1,
-  maxTries: 1000
+  //maxTries: 1000
   //maxRooms: 30
 },
   () => document.getElementById('generando').style.display = 'none')

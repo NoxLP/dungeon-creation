@@ -41,8 +41,8 @@ export function drawRoom(room) {
     ctx.fillRect(
       applyRatio(room.topLeft[0], 'x'),
       applyRatio(room.topLeft[1], 'y'),
-      applyRatio(Math.abs(room.bottomRight[0] - room.topLeft[0]), 'x'),
-      applyRatio(Math.abs(room.bottomRight[1] - room.topLeft[1]), 'y')
+      applyRatio(Math.abs(room.bottomRight[0] - room.topLeft[0]) + 1, 'x'),
+      applyRatio(Math.abs(room.bottomRight[1] - room.topLeft[1]) + 1, 'y')
     )
     ctx.fillStyle = 'rgb(0,0,0)'
     ctx.font = "14px Arial"

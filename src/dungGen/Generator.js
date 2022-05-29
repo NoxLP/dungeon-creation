@@ -24,10 +24,6 @@ export async function Generator(width, height, config, finishCallback) {
     : config.roomMinSize
       ? config.roomMinSize
       : ROOM_MIN_SIZE;
-  const rooms = {};
-  const emptyCells = {};
-  const roomCells = {};
-  const corridors = [];
   const maxTries = config.maxTries || containerWidth * containerHeight * 0.25
   console.log('MAXTRIES: ', maxTries);
   const minSpaceBetweenRooms = !config
@@ -45,6 +41,11 @@ export async function Generator(width, height, config, finishCallback) {
     : config.corridorsWidth
       ? config.corridorsWidth
       : CORRIDORS_WIDTH
+
+  const rooms = {};
+  const emptyCells = {};
+  const roomCells = {};
+  const corridors = [];
 
   // ****************** private methods
   const coordsAreInsideMap = (coords) =>
@@ -241,118 +242,227 @@ export async function Generator(width, height, config, finishCallback) {
     console.log('>>>>>>>>>> DONE GENERATING ROOMS')
   }
 
-  const changeDirectionClockWise = (direction) => [-direction[1], direction[0]]
+  const changeDirectionClockWise = (direction) => ([
+    direction[1] == 0 ? 0 : -direction[1],
+    direction[0]
+  ])
+  const getPerpendicularDirections = (direction) => (
+    [
+      [
+        direction[1] == 0 ? 0 : -direction[1],
+        direction[0]
+      ],
+      [
+        direction[1],
+        direction[0] == 0 ? 0 : -direction[0]
+      ]
+    ]
+  )
+  const getOppositeDirection = (direction) => ([
+    direction[0] == 0 ? 0 : -direction[0],
+    direction[1] == 0 ? 0 : -direction[1]
+  ])
 
-  const canBeACorridor = (coords, lastNode) => {
-    console.log('>>>>>>>> canBeACorridor');
+  const canBeACorridor = (coords, corridor, lastNode, direction) => {
+    // nextC = [coords[0] - 1, coords[1] - 1] //NW
+    // addCoords(nextC)
+    // nextC = [coords[0] + 1, coords[1] - 1] //NE
+    // addCoords(nextC)
+    // nextC = [coords[0] - 1, coords[1] + 1] //SW
+    // addCoords(nextC)
+    // nextC = [coords[0] + 1, coords[1] + 1] //SE
+    console.groupCollapsed('>>>>>>>> canBeACorridor ', coords);
+    const coordsAreOk = (c) =>
+      emptyCells[buildCellKey(c)]
+      && coordsAreInsideMapIncluding0(c)
+    if (!coordsAreOk(coords)) return false
+
     const minSpace = minSpaceBetweenCorridors + corridorsWidth
-    const getCheckCoords = (i) => {
-      const c = []
-      let nextC = [coords[0] - 1, coords[1]] //W
-      const addCoords = () => {
-        if (!lastNode || (nextC[0] != lastNode[0] && nextC[1] != lastNode[1]))
-          c.push(nextC)
-      }
-      addCoords(nextC)
-      nextC = [coords[0] + 1, coords[1]] //E
-      addCoords(nextC)
-      nextC = [coords[0], coords[1] - 1] //N
-      addCoords(nextC)
-      nextC = [coords[0], coords[1] + 1] //S
-      addCoords(nextC)
-      nextC = [coords[0] - 1, coords[1] - 1] //NW
-      addCoords(nextC)
-      nextC = [coords[0] + 1, coords[1] - 1] //NE
-      addCoords(nextC)
-      nextC = [coords[0] - 1, coords[1] + 1] //SW
-      addCoords(nextC)
-      nextC = [coords[0] + 1, coords[1] + 1] //SE
-      addCoords(nextC)
-      return c
-    }
-    // ? (i) => ([[coords[0], coords[1] - i], [coords[0], coords[1] + i]])
-    // : (i) => ([[coords[0] - i, coords[1]], [coords[0] + i, coords[1]]])
+    const coordsAreInCorridor = (c) =>
+      corridor[buildCellKey(c)]
+    const isLastNode = (c) =>
+      lastNode && (c[0] == lastNode[0] && c[1] == lastNode[1])
 
-    for (let i = 0; i < minSpace; i++) {
-      const checkCoords = getCheckCoords(i)
-      console.log('CHECK COORDS ', i, checkCoords);
-      checkCoords.some((c) => {
-        console.log(c)
-        console.log(!emptyCells[buildCellKey(c)])
-        console.log((i != 0 ? !coordsAreInsideMapIncluding0(c)
-          : !coordsAreInsideMap(c)))
-      })
-      if (checkCoords.some((c) => !emptyCells[buildCellKey(c)]
-        || !coordsAreInsideMapIncluding0(c)))
+    //const oppositeDirection = getOppositeDirection(direction)
+    const perpendicularDirections = getPerpendicularDirections(direction)
+
+    for (let i = 1; i < minSpace; i++) {
+      let checkCoords = [
+        coords[0] + (direction[0] * i),
+        coords[1] + (direction[1] * i)
+      ]
+      console.log('c same dir ', checkCoords);
+      console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+      console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
+      console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
+      if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
+        console.groupEnd()
         return false
+      }
+
+      for (let d = 0; d < 2; d++) {
+        checkCoords = [
+          coords[0] + (perpendicularDirections[d][0] * i),
+          coords[1] + (perpendicularDirections[d][1] * i)
+        ]
+        console.log('c perpendic ', checkCoords);
+        console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+        console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
+        console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
+        if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
+          console.groupEnd()
+          return false
+        }
+      }
+
+      // let direction = [1, 0]
+      // for (let d = 0; d < 4; d++) {
+      //   direction = changeDirectionClockWise(direction)
+      //   let checkCoords = [
+      //     coords[0] + (direction[0] * i),
+      //     coords[1] + (direction[1] * i)
+      //   ]
+      //   if (isLastNode(checkCoords)) continue
+      //   console.log('c ', checkCoords);
+      //   console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+      //   console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
+      //   console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
+      //   if (coordsAreInCorridor(checkCoords) || !coordsAreOk(checkCoords)) {
+      //     console.groupEnd()
+      //     return false
+      //   }
+      // }
     }
+    console.groupEnd()
 
     return true
   }
   const generateCorridor = (start) => {
-    const nearNodes = [start]
-    let currentNode, lastNode
+    let nearNodes = [{
+      node: start,
+      last: undefined,
+      direction: [1, 0]
+    }]
+    const checkedNodes = []
+    let currentNode, lastNode, checkDirection
     const corridor = {}
     let direction = [1, 0]
     let tries = 0
 
-    const addNodeToCorridor = (coords) => {
-      const key = buildCellKey(coords)
-      corridor[key] = coords
+    const addNodeToCorridor = (node) => {
+      const key = buildCellKey(node)
+      corridor[key] = node
       delete emptyCells[key]
-      if (lastNode) {
-        direction = []
-        const compare = (first, second) => (
-          first == second
-            ? 0
-            : first > second
-              ? 1
-              : -1
-        )
-        direction[0] = compare(currentNode[0], lastNode[0])
-        direction[1] = compare(currentNode[1], lastNode[1])
+      checkedNodes.push(node)
+    }
+    const unshiftToNearNodes = (node, currentNode, direction) => {
+      if (emptyCells[buildCellKey(node)]
+        && !checkedNodes.some((n) =>
+          n[0] == node[0] && n[1] == node[1])
+        && !nearNodes.some((n) =>
+          n[0] == node[0] && n[1] == node[1])) {
+        nearNodes.unshift({
+          node,
+          last: currentNode,
+          direction
+        })
+        return true
       }
+      return false
     }
-    const addToNearNodes = (node) => {
-      if (emptyCells[buildCellKey(node)])
-        nearNodes.push(node)
+    const pushToNearNodes = (node, currentNode, direction) => {
+      if (emptyCells[buildCellKey(node)]
+        && !checkedNodes.some((n) =>
+          n[0] == node[0] && n[1] == node[1])
+        && !nearNodes.some((n) =>
+          n[0] == node[0] && n[1] == node[1])) {
+        nearNodes.push({
+          node,
+          last: currentNode,
+          direction
+        })
+        return true
+      }
+      return false
     }
+    const compare = (first, second) => (
+      first == second
+        ? 0
+        : second > first
+          ? 1
+          : -1
+    )
 
-    while (nearNodes.length > 0 && tries < maxTries) {
+    while (nearNodes.length > 0) {
+      console.log('')
+      console.log('============== NEW ITERATION ==============')
       tries++
-      lastNode = currentNode
-      currentNode = nearNodes.shift()
-      console.log('CURRNT NODE ', currentNode);
-      if (canBeACorridor(currentNode, lastNode)) {
-        console.log('canBeACorridor')
+      const near = nearNodes.shift()
+      lastNode = near.last
+      currentNode = near.node
+      direction = near.direction
+      checkedNodes.push(currentNode)
+
+      // if (lastNode) {
+      //   direction = []
+      //   direction[0] = compare(lastNode[0], currentNode[0])
+      //   direction[1] = compare(lastNode[1], currentNode[1])
+      //   checkDirection = false
+      // }
+
+      console.log('CURRENT NODE ', currentNode);
+      console.log('last NODE ', lastNode);
+      if (canBeACorridor(currentNode, corridor, lastNode, direction)) {
+        console.log('YES canBeACorridor')
+        console.log('direction: ', direction)
         addNodeToCorridor(currentNode)
-        //if (direction) {
-        addToNearNodes([
+        //nearNodes = []
+        // getPerpendicularDirections(direction).forEach((perpendicular) => {
+        //   const newNearNode = [
+        //     currentNode[0] + perpendicular[0],
+        //     currentNode[1] + perpendicular[1]
+        //   ]
+        //   console.log('new near node ', newNearNode)
+        //   const push = unshiftToNearNodes(newNearNode, currentNode, direction)
+        //   console.log('pushed: ', push)
+        // })
+        unshiftToNearNodes([
+          currentNode[0] + direction[0],
+          currentNode[1] + direction[1]
+        ],
+          currentNode,
+          direction
+        )
+        console.log('next node: ', [
           currentNode[0] + direction[0],
           currentNode[1] + direction[1]
         ])
-        // } else {
-        //   addToNearNodes([currentNode[0] - 1, currentNode[1]]) //W
-        //   addToNearNodes([currentNode[0] + 1, currentNode[1]]) //E 
-        //   addToNearNodes([currentNode[0], currentNode[1] - 1]) //N
-        //   addToNearNodes([currentNode[0], currentNode[1] + 1]) //S}
-        // }
-        console.log('NEAR NODES ', nearNodes);
+
+        // console.log('NEAR NODES ', JSON.stringify(nearNodes));
+        // console.groupEnd()
       } else {
-        direction = changeDirectionClockWise(direction)
-        addToNearNodes([
-          currentNode[0] + direction[0],
-          currentNode[1] + direction[1]
-        ])
-        currentNode = lastNode
+        // console.groupEnd()
+        console.log('NO canBeACorridor')
+        checkedNodes.push(currentNode)
+        checkDirection = true
+        if (lastNode) currentNode = lastNode
+
+        for (let i = 0; i < 4; i++) {
+          direction = changeDirectionClockWise(direction)
+          const newNearNode = [
+            currentNode[0] + direction[0],
+            currentNode[1] + direction[1]
+          ]
+          console.log('new near node ', newNearNode)
+          const push = pushToNearNodes(newNearNode, currentNode, direction)
+          console.log('pushed: ', push)
+        }
+        console.log('NEAR NODES ', JSON.stringify(nearNodes));
       }
       console.log('------------------------- DONE ', corridor);
     }
 
     return corridor
-    // const findCorridorStartingPosition = () => {
-
-    // }
   }
   const generateAllCorridors = () => {
     let start = [1, 1]
@@ -363,6 +473,10 @@ export async function Generator(width, height, config, finishCallback) {
       corridors.push(currentCorridor)
       console.log(corridors)
     }
+    //find secondary ways
+    // Object.values(currentCorridor).forEach((node) => {
+    //   // first check corners
+    // })
 
 
     /* while (tries < maxTries) {
