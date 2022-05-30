@@ -42,10 +42,12 @@ export async function Generator(width, height, config, finishCallback) {
       ? config.corridorsWidth
       : CORRIDORS_WIDTH
 
-  const rooms = {};
-  const emptyCells = {};
-  const roomCells = {};
-  const corridors = [];
+  const rooms = {}
+  const emptyCells = {}
+  const roomCells = {}
+  const corridors = []
+
+  const zonesChecked = []
 
   // ****************** private methods
   const coordsAreInsideMap = (coords) =>
@@ -272,15 +274,15 @@ export async function Generator(width, height, config, finishCallback) {
     // nextC = [coords[0] - 1, coords[1] + 1] //SW
     // addCoords(nextC)
     // nextC = [coords[0] + 1, coords[1] + 1] //SE
-    console.groupCollapsed('>>>>>>>> canBeACorridor ', coords);
+    // console.groupCollapsed('>>>>>>>> canBeACorridor ', coords);
     const coordsAreOk = (c) =>
       emptyCells[buildCellKey(c)]
       && coordsAreInsideMapIncluding0(c)
     if (!coordsAreOk(coords) || coordsAreInRoomMargin(coords)) {
-      console.log('In room margin: ', coordsAreInRoomMargin(coords))
-      console.log('Is empty: ', !!emptyCells[buildCellKey(coords)])
-      console.log('Is in map: ', coordsAreInsideMapIncluding0(coords))
-      console.groupEnd()
+      // console.log('In room margin: ', coordsAreInRoomMargin(coords))
+      // console.log('Is empty: ', !!emptyCells[buildCellKey(coords)])
+      // console.log('Is in map: ', coordsAreInsideMapIncluding0(coords))
+      // console.groupEnd()
       return false
     }
 
@@ -298,13 +300,13 @@ export async function Generator(width, height, config, finishCallback) {
         coords[0] + (direction[0] * i),
         coords[1] + (direction[1] * i)
       ]
-      console.log('c same dir ', checkCoords);
-      console.log('In corridor: ', coordsAreInCorridor(checkCoords))
-      console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
-      console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
-      console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
+      // console.log('c same dir ', checkCoords);
+      // console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+      // console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
+      // console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
+      // console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
       if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
-        console.groupEnd()
+        // console.groupEnd()
         return false
       }
 
@@ -313,18 +315,18 @@ export async function Generator(width, height, config, finishCallback) {
           coords[0] + (perpendicularDirections[d][0] * i),
           coords[1] + (perpendicularDirections[d][1] * i)
         ]
-        console.log('c perpendic ', checkCoords);
-        console.log('In corridor: ', coordsAreInCorridor(checkCoords))
-        console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
-        console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
-        console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
+        // console.log('c perpendic ', checkCoords);
+        // console.log('In corridor: ', coordsAreInCorridor(checkCoords))
+        // console.log('In room margin: ', coordsAreInRoomMargin(checkCoords))
+        // console.log('Is empty: ', !!emptyCells[buildCellKey(checkCoords)])
+        // console.log('Is in map: ', coordsAreInsideMapIncluding0(checkCoords))
         if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords)) {
-          console.groupEnd()
+          // console.groupEnd()
           return false
         }
       }
     }
-    console.groupEnd()
+    // console.groupEnd()
 
     return true
   }
@@ -385,8 +387,8 @@ export async function Generator(width, height, config, finishCallback) {
     )
 
     while (nearNodes.length > 0) {
-      console.log('')
-      console.log('============== NEW ITERATION ==============')
+      // console.log('')
+      // console.log('============== NEW ITERATION ==============')
       tries++
       const near = nearNodes.shift()
       lastNode = near.last
@@ -394,20 +396,12 @@ export async function Generator(width, height, config, finishCallback) {
       direction = near.direction
       checkedNodes.push(currentNode)
 
-      // if (lastNode) {
-      //   direction = []
-      //   direction[0] = compare(lastNode[0], currentNode[0])
-      //   direction[1] = compare(lastNode[1], currentNode[1])
-      //   checkDirection = false
-      // }
-
-      console.log('CURRENT NODE ', currentNode);
-      console.log('last NODE ', lastNode);
+      // console.log('CURRENT NODE ', currentNode);
+      // console.log('last NODE ', lastNode);
       if (canBeACorridor(currentNode, corridor, lastNode, direction)) {
-        console.log('YES canBeACorridor ', currentNode)
-        console.log('direction: ', direction)
+        // console.log('YES canBeACorridor ', currentNode)
+        // console.log('direction: ', direction)
         addNodeToCorridor(currentNode)
-        //nearNodes = []
         // getPerpendicularDirections(direction).forEach((perpendicular) => {
         //   const newNearNode = [
         //     currentNode[0] + perpendicular[0],
@@ -424,16 +418,16 @@ export async function Generator(width, height, config, finishCallback) {
           currentNode,
           direction
         )
-        console.log('next node: ', [
-          currentNode[0] + direction[0],
-          currentNode[1] + direction[1]
-        ])
+        // console.log('next node: ', [
+        //   currentNode[0] + direction[0],
+        //   currentNode[1] + direction[1]
+        // ])
 
         // console.log('NEAR NODES ', JSON.stringify(nearNodes));
         // console.groupEnd()
       } else {
         // console.groupEnd()
-        console.log('NO canBeACorridor')
+        // console.log('NO canBeACorridor')
         checkedNodes.push(currentNode)
         checkDirection = true
         if (lastNode) currentNode = lastNode
@@ -444,43 +438,212 @@ export async function Generator(width, height, config, finishCallback) {
             currentNode[0] + direction[0],
             currentNode[1] + direction[1]
           ]
-          console.log('new near node ', newNearNode)
+          // console.log('new near node ', newNearNode)
           const push = pushToNearNodes(newNearNode, currentNode, direction)
-          console.log('pushed: ', push)
+          // console.log('pushed: ', push)
         }
-        console.log('NEAR NODES ', JSON.stringify(nearNodes));
+        // console.log('NEAR NODES ', JSON.stringify(nearNodes));
       }
-      console.log('------------------------- DONE ', corridor);
+      // console.log('------------------------- DONE ', corridor);
     }
 
     return corridor
   }
-  const generateAllCorridors = () => {
-    let start = [1, 1]
-    let tries = 0
-    let currentCorridor = generateCorridor(start)
-    console.log('####### current corr ', currentCorridor);
-    if (Object.keys(currentCorridor).length > 0) {
-      corridors.push(currentCorridor)
-      console.log(corridors)
-    }
-    //find secondary ways
-    // Object.values(currentCorridor).forEach((node) => {
-    //   // first check corners
-    // })
-
-
-    /* while (tries < maxTries) {
-      tries++
-      currentCorridor = generateCorridor(start)
-      //console.log(currentCorridor)
-      if (currentCorridor.length > 0) {
-        corridors.push(currentCorridor)
-        tries = 0
-      }
-    } */
+  const zoneIsAlreadyChecked = (zone) => {
+    return zonesChecked.some((z) => (
+      z.start[0] == zone.start[0] && z.start[1] == zone.start[1] &&
+      z.end[0] == zone.end[0] && z.end[1] == zone.end[1]
+    ))
   }
-  // ******************
+  const roomRayIntersectsRoom = async (room, directionName) => {
+    // console.log('=========== roomRayIntersectsRoom ', directionName, room)
+    // goes south from bottom left, right and center, 
+    // searching other room
+    const startingPoints = []
+    let direction = []
+
+    switch (directionName) {
+      case 'east':
+        // console.log('> EAST')
+        if (room.height >= 5) {
+          startingPoints.push(room.topRight)
+          startingPoints.push(room.bottomRight)
+        }
+        if (room.height < 5 || room.height >= 8)
+          startingPoints.push([room.topRight[0], room.center[1]])
+        direction = [1, 0]
+        break;
+      case 'west':
+        // console.log('> WEST')
+        if (room.height >= 5) {
+          startingPoints.push(room.topLeft)
+          startingPoints.push(room.bottomLeft)
+        }
+        if (room.height < 5 || room.height >= 8)
+          startingPoints.push([room.topLeft[0], room.center[1]])
+        direction = [-1, 0]
+        break;
+      case 'north':
+        // console.log('> NORTH')
+        if (room.width >= 5) {
+          startingPoints.push(room.topLeft)
+          startingPoints.push(room.topRight)
+        }
+        if (room.width < 5 || room.width >= 8)
+          startingPoints.push([room.center[0], room.topRight[1]])
+        direction = [0, -1]
+        break;
+      case 'south':
+        // console.log('> SOUTH ', room.width)
+        if (room.width >= 5) {
+          startingPoints.push(room.bottomLeft)
+          startingPoints.push(room.bottomRight)
+        }
+        if (room.width < 5 || room.width >= 8)
+          startingPoints.push([room.center[0], room.bottomRight[1]])
+        direction = [0, 1]
+        break;
+    }
+    // console.log('> --------------------- HERE')
+    // console.log('> starting points: ', startingPoints)
+    // console.log('> direction: ', direction)
+
+    const rays = startingPoints.map((startingPoint) => {
+      return new Promise((resolve) => {
+        let stop = false
+        let distance = 0
+        let maxDistance = 0
+        let maxDistanceIndex = 0
+        let currentIndex = 0
+        let currentPoint = [...startingPoint]
+        const intersectionPoints = []
+        let tries = 0
+        while (!stop && tries < maxTries / 4) {
+          tries++
+          currentPoint = [
+            currentPoint[0] + direction[0],
+            currentPoint[1] + direction[1],
+          ]
+          // console.log('> current point: ', currentPoint)
+
+          if (!coordsAreInsideMap(currentPoint)) {
+            // console.log('out of map!')
+            stop = true
+          }
+          else if (!emptyCells[buildCellKey(currentPoint)]) { // intersects!
+            // console.log('> intersects!')
+            intersectionPoints.push({
+              point: currentPoint,
+              distance: distance
+            })
+            if (distance > maxDistance) {
+              maxDistance = distance
+              maxDistanceIndex = currentIndex
+            }
+            currentIndex++
+            // is a room
+            if (coordsAreInARoom(currentPoint)) stop = true
+            // is a corridor
+            else distance = 0
+          }
+
+          distance++
+        }
+
+        if (intersectionPoints.length > 0) {
+          resolve({
+            start: intersectionPoints.length == 1 || maxDistanceIndex == 0
+              ? startingPoint
+              : intersectionPoints[maxDistanceIndex - 1].point,
+            end: intersectionPoints[maxDistanceIndex].point,
+            distance: intersectionPoints[maxDistanceIndex].distance
+          })
+        }
+        else
+          resolve(null)
+      })
+    })
+
+    try {
+      let intersections = await Promise.all(rays)
+
+      if (intersections.some((i) => i)) {
+        intersections = intersections
+          .filter((i) => i
+            && !zoneIsAlreadyChecked(i)
+            && i.distance >= ((2 * minSpaceBetweenCorridors) + corridorsWidth)
+          )
+          .sort((a, b) => b.distance - a.distance)
+        // console.log('>> intersections: ', intersections)
+        if (intersections && intersections.length > 0) {
+          // console.log('>> return intersections')
+          return intersections[0]
+        }
+      }
+
+      // console.log('>> reject')
+      return Promise.reject(null)
+    } catch (err) {
+      // console.log('************************* ERROR ')
+      // console.log(err.message);                   // "All Promises rejected"
+      // console.log(err.name);                      // "AggregateError"
+      // console.log(err.errors);                    // [ Error: "some error" ]
+      return Promise.reject(null)
+    }
+  }
+  const findFirstEmptyZoneBetweenRooms = async () => {
+    const myRooms = Object.values(rooms)
+    const directions = ['west', 'east', 'north', 'south']
+    const intersectionsPromises = []
+    for (let i = 0; i < myRooms.length; i++) {
+      for (let d = 0; d < 4; d++) {
+        intersectionsPromises.push(roomRayIntersectsRoom(myRooms[i], directions[d]))
+      }
+    }
+
+    try {
+      let intersections = await Promise.any(intersectionsPromises)
+      // console.log('************************* intersections', intersections)
+
+      return intersections
+    } catch (err) {
+      // console.log('************************* null ')
+      // console.log(err.message);                   // "All Promises rejected"
+      // console.log(err.name);                      // "AggregateError"
+      // console.log(err.errors);                    // [ Error: "some error" ]
+      return null
+    }
+  }
+  const generateAllCorridors = async () => {
+    let corridorStart = [1, 1]
+    let tries = 0
+    let intersection = await findFirstEmptyZoneBetweenRooms()
+
+    while (intersection) {
+      tries++
+      // console.log('####### current inter ', intersection);
+      zonesChecked.push(intersection)
+      // console.log('####### current checked ', zonesChecked);
+      const xMin = Math.min(intersection.start[0], intersection.end[0])
+      const yMin = Math.min(intersection.start[1], intersection.end[1])
+      corridorStart = [
+        Math.floor(
+          Math.abs(intersection.start[0] - intersection.end[0]) * 0.5 + xMin),
+        Math.floor(
+          Math.abs(intersection.start[1] - intersection.end[1]) * 0.5 + yMin),
+      ]
+      // console.log('####### current start ', corridorStart);
+      let currentCorridor = generateCorridor(corridorStart)
+      // console.log('####### current corr ', currentCorridor);
+      if (currentCorridor && Object.keys(currentCorridor).length > 1) {
+        corridors.push(currentCorridor)
+        // console.log(corridors)
+      }
+
+      intersection = await findFirstEmptyZoneBetweenRooms()
+    }
+  }
+  // ****************** end fields and properties
 
   for (let i = 0; i < containerWidth; i++) {
     for (let j = 0; j < containerHeight; j++) {
@@ -491,7 +654,9 @@ export async function Generator(width, height, config, finishCallback) {
   await generateRooms(
     config && config.maxRooms ? config.maxRooms : undefined
   )
-  generateAllCorridors()
+  await generateAllCorridors()
+  // const intersection = await findFirstEmptyZoneBetweenRooms()
+  // console.log('==================== intersection: ', intersection)
 
   const result = {
     rooms: simpleGetProxy(rooms),

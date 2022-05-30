@@ -24,6 +24,8 @@ export function Room(topLeft, bottomRight) {
     Math.floor((bottomRightCoords[0] - topLeftCoords[0]) / 2) + topLeftCoords[0],
     Math.floor((bottomRightCoords[1] - topLeftCoords[1]) / 2) + topLeftCoords[1],
   ])
+  this.width = this.topRight[0] - this.topLeft[0]
+  this.height = this.bottomLeft[1] - this.topLeft[1]
 
   this.xMax = bottomRightCoords[0]
   this.xMin = topLeftCoords[0]
