@@ -54,10 +54,29 @@ BR: ${room.bottomRight}`,
     )
   }
 }
+const CORRIDOR_COLORS = [
+  'a52a2a',
+  'f4a460',
+  'd2691e',
+  '8b4513',
+  'ed1c24',
+  '703642',
+  '4169e1',
+  '1e90ff',
+  '00ced1',
+  '708090',
+  '9932cc',
+  'ff1dce',
+  '8b008b',
+  'ff4500',
+  'ffc40c',
+]
 export function drawCorridor(corridor, corridorWidth) {
   if (ctx) {
-    ctx.fillStyle = 'rgb(205,127,50)'
-    corridor.forEach((c) => {
+    ctx.fillStyle = CORRIDOR_COLORS.length > 0 ?
+      `#${CORRIDOR_COLORS.pop()}` :
+      Math.floor(Math.random() * 16777215).toString(16)
+    Object.values(corridor.cells).forEach((c) => {
       ctx.fillRect(
         applyRatio(c[0], 'x'),
         applyRatio(c[1], 'y'),

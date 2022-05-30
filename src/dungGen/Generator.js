@@ -1,4 +1,5 @@
 import { Room } from "./Room.js";
+import { Corridor } from "./Corridor.js";
 import { intRandomBetweenRange } from "../helpers/random.js";
 import { simpleGetProxy } from "../helpers/proxy.js";
 
@@ -7,6 +8,8 @@ const ROOM_MIN_SIZE = [10, 10]
 const MIN_SPACE_BETWEEN_ROOMS = 0
 const MIN_SPACE_BETWEEN_CORRIDORS = 1
 const CORRIDORS_WIDTH = 1
+
+export const buildCellKey = (coords) => `${coords[0]},${coords[1]}`
 
 // yeah, I could use classes... I wouldn't have private members and
 // I don't need typescript
@@ -56,7 +59,6 @@ export async function Generator(width, height, config, finishCallback) {
   const coordsAreInsideMapIncluding0 = (coords) =>
     coords[0] >= 0 && coords[0] < containerWidth
     && coords[1] >= 0 && coords[1] < containerHeight
-  const buildCellKey = (coords) => `${coords[0]},${coords[1]}`
   const getCoordsFromKey = (key) => {
     const match = key.match(/^(\d+),(\d+)/)
     if (match) return [parseInt(match[1]), parseInt(match[2])]
@@ -340,7 +342,6 @@ export async function Generator(width, height, config, finishCallback) {
     let currentNode, lastNode, checkDirection
     const corridor = {}
     let direction = [1, 0]
-    let tries = 0
 
     const addNodeToCorridor = (node) => {
       const key = buildCellKey(node)
@@ -378,18 +379,10 @@ export async function Generator(width, height, config, finishCallback) {
       }
       return false
     }
-    const compare = (first, second) => (
-      first == second
-        ? 0
-        : second > first
-          ? 1
-          : -1
-    )
 
     while (nearNodes.length > 0) {
       // console.log('')
       // console.log('============== NEW ITERATION ==============')
-      tries++
       const near = nearNodes.shift()
       lastNode = near.last
       currentNode = near.node
@@ -616,11 +609,9 @@ export async function Generator(width, height, config, finishCallback) {
   }
   const generateAllCorridors = async () => {
     let corridorStart = [1, 1]
-    let tries = 0
     let intersection = await findFirstEmptyZoneBetweenRooms()
 
     while (intersection) {
-      tries++
       // console.log('####### current inter ', intersection);
       zonesChecked.push(intersection)
       // console.log('####### current checked ', zonesChecked);
@@ -635,15 +626,18 @@ export async function Generator(width, height, config, finishCallback) {
       // console.log('####### current start ', corridorStart);
       let currentCorridor = generateCorridor(corridorStart)
       // console.log('####### current corr ', currentCorridor);
-      if (currentCorridor && Object.keys(currentCorridor).length > 1) {
-        corridors.push(currentCorridor)
+      if (currentCorridor && Object.keys(currentCorridor).length > 2) {
+        corridors.push(Corridor(currentCorridor))
         // console.log(corridors)
+      } else if (Object.keys(currentCorridor).length <= 2) {
+        Object.keys(currentCorridor).forEach((k) => emptyCells[k] = true)
       }
 
       intersection = await findFirstEmptyZoneBetweenRooms()
     }
   }
-  // ****************** end fields and properties
+
+  // ****************** end fields, properties, methods
 
   for (let i = 0; i < containerWidth; i++) {
     for (let j = 0; j < containerHeight; j++) {
@@ -655,8 +649,7 @@ export async function Generator(width, height, config, finishCallback) {
     config && config.maxRooms ? config.maxRooms : undefined
   )
   await generateAllCorridors()
-  // const intersection = await findFirstEmptyZoneBetweenRooms()
-  // console.log('==================== intersection: ', intersection)
+  console.log('CORS: ', corridors)
 
   const result = {
     rooms: simpleGetProxy(rooms),

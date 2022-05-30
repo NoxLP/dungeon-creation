@@ -40,4 +40,4 @@ Object.values(generator.rooms).forEach((r) => {
 })
 console.groupEnd()
 console.log(generator.corridors);
-generator.corridors.forEach((c) => drawCorridor(Object.values(c)))
+generator.corridors.forEach((c) => drawCorridor(c))
