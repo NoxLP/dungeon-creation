@@ -1,6 +1,6 @@
 import { Generator } from "./dungGen/Generator.js";
 import { Room } from "./dungGen/Room.js";
-import { drawRoom, drawCorridor, drawGrid, setRatio } from "./testCanvas/canvas.js";
+import { drawRoom, drawCorridor, drawCell, drawGrid, setRatio } from "./testCanvas/canvas.js";
 
 const container = document.getElementById('container')
 
@@ -41,3 +41,15 @@ Object.values(generator.rooms).forEach((r) => {
 console.groupEnd()
 console.log(generator.corridors);
 generator.corridors.forEach((c) => drawCorridor(c))
+
+let i = 0
+// generator.corridors[0].walkCorridor((c, d) => {
+//   ++i
+//   setTimeout(() => { drawCell(c, '#000000') }, i * 5)
+// })
+Object.values(generator.corridors).forEach((c) => Object.values(c.passages).forEach((p) => {
+  ++i
+  setTimeout(() => {
+    drawCell(p.cell, '#000000')
+  }, i * 15)
+}))

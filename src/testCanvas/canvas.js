@@ -87,3 +87,15 @@ export function drawCorridor(corridor, corridorWidth) {
     })
   }
 }
+export function drawCell(cell, color) {
+  if (ctx) {
+    ctx.fillStyle = color
+    ctx.fillRect(
+      applyRatio(cell[0], 'x'),
+      applyRatio(cell[1], 'y'),
+      //Right now, width is always 1
+      applyRatio(1, 'x'),
+      applyRatio(1, 'y'),
+    )
+  }
+}

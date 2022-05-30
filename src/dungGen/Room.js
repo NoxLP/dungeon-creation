@@ -14,7 +14,7 @@ export function Room(topLeft, bottomRight) {
   const topLeftCoords = topLeft
   const bottomRightCoords = bottomRight
 
-  this.id = currentMaxId
+  this.id = `room-${currentMaxId}`
   currentMaxId++
   this.topLeft = simpleGetProxy(topLeftCoords)
   this.topRight = simpleGetProxy([bottomRightCoords[0], topLeftCoords[1]])
