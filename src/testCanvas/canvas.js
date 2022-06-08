@@ -76,6 +76,13 @@ export function drawCorridor(corridor, corridorWidth) {
     ctx.fillStyle = CORRIDOR_COLORS.length > 0 ?
       `#${CORRIDOR_COLORS.pop()}` :
       Math.floor(Math.random() * 16777215).toString(16)
+    ctx.font = "14px Arial"
+    ctx.fillText(
+      `ID: ${corridor.id} \n
+start: ${corridor.start}`,
+      applyRatio(corridor.start[0], 'x'),
+      applyRatio(corridor.start[1], 'y')
+    )
     Object.values(corridor.cells).forEach((c) => {
       ctx.fillRect(
         applyRatio(c[0], 'x'),
