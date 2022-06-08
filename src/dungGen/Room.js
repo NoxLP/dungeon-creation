@@ -26,6 +26,7 @@ export function Room(topLeft, bottomRight) {
   ])
   this.width = this.topRight[0] - this.topLeft[0]
   this.height = this.bottomLeft[1] - this.topLeft[1]
+  this.passages = {}
 
   this.xMax = bottomRightCoords[0]
   this.xMin = topLeftCoords[0]
@@ -49,19 +50,46 @@ export function Room(topLeft, bottomRight) {
   this.distanceXTo = (other) => this.xMax - other.xMin
   this.distanceYTo = (other) => this.yMax - other.yMin
   this.isInMargin = (coords) =>
-    (coords[1] <= this.yMax
+    (
+      coords[1] <= this.yMax
       && coords[1] >= this.yMin
       && (
         this.xMax + 1 == coords[0]
         || this.xMin - 1 == coords[0]
       )
-    )
-    || (coords[0] <= this.xMax
+    ) || (
+      coords[0] <= this.xMax
       && coords[0] >= this.xMin
       && (
         this.yMax + 1 == coords[1]
         || this.yMin - 1 == coords[1]
       )
+    ) || (
+      this.xMin - 1 == coords[0]
+      && this.yMin - 1 == coords[1]
+    ) || (
+      this.xMax + 1 == coords[0]
+      && this.yMin - 1 == coords[1]
+    ) || (
+      this.xMax + 1 == coords[0]
+      && this.yMax + 1 == coords[1]
+    ) || (
+      this.xMin - 1 == coords[0]
+      && this.yMax + 1 == coords[1]
+    )
+  this.isMarginCorner = (coords) =>
+    (
+      this.xMin - 1 == coords[0]
+      && this.yMin - 1 == coords[1]
+    ) || (
+      this.xMax + 1 == coords[0]
+      && this.yMin - 1 == coords[1]
+    ) || (
+      this.xMax + 1 == coords[0]
+      && this.yMax + 1 == coords[1]
+    ) || (
+      this.xMin - 1 == coords[0]
+      && this.yMax + 1 == coords[1]
     )
 
   return this

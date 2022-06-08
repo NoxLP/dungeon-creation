@@ -1,5 +1,5 @@
 import { simpleGetProxy } from "../helpers/proxy.js";
-import { buildCellKey, changeDirectionClockWise, getNewCoordsInDirection } from "../helpers/helpers.js";
+import { buildCellKey, getNewDirectionClockWise, getNewCoordsInDirection } from "../helpers/helpers.js";
 
 let currentMaxId = 0
 
@@ -13,7 +13,7 @@ export function Corridor(data) {
   this.start = simpleGetProxy(start)
   this.passages = {}
   this.addCell = (coords) => cells[buildCellKey(coords)] = coords
-  this.coordsAreInside = (coords) => !!cells[buildCellKey(coords)]
+  this.isInside = (coords) => !!cells[buildCellKey(coords)]
   this.walkCorridor = (cellDirectionCallback) => {
     const uncheckedCells = { ...cells }
     let currentCell = start
@@ -23,14 +23,14 @@ export function Corridor(data) {
     while (currentCell) {
       let d = 0
       while (
-        (!nextCell || !this.coordsAreInside(nextCell) || !uncheckedCells[buildCellKey(nextCell)])
+        (!nextCell || !this.isInside(nextCell) || !uncheckedCells[buildCellKey(nextCell)])
         && d < 4) {
-        direction = changeDirectionClockWise(direction)
+        direction = getNewDirectionClockWise(direction)
         nextCell = getNewCoordsInDirection(currentCell, direction)
         d++
       }
 
-      if (nextCell && this.coordsAreInside(nextCell)) {
+      if (nextCell && this.isInside(nextCell)) {
         currentCell = nextCell
         delete uncheckedCells[buildCellKey(nextCell)]
         cellDirectionCallback(currentCell, direction)
@@ -44,9 +44,9 @@ export function Corridor(data) {
       lastCells.forEach((c) => {
         let nearestCell
         for (let i = 0; i < 4; i++) {
-          direction = changeDirectionClockWise(direction)
+          direction = getNewDirectionClockWise(direction)
           nearestCell = getNewCoordsInDirection(c, direction)
-          if (this.coordsAreInside(nearestCell)) break
+          if (this.isInside(nearestCell)) break
         }
         cellDirectionCallback(c, direction)
       })

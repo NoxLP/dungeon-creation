@@ -4,9 +4,12 @@ import { intRandomBetweenRange } from "../helpers/random.js";
 import { simpleGetProxy } from "../helpers/proxy.js";
 import {
   buildCellKey,
-  changeDirectionClockWise,
+  getNewDirectionClockWise,
+  getNewDirectionAntiClockWise,
   getPerpendicularDirections,
-  getNewCoordsInDirection
+  getNewCoordsInDirection,
+  coordsEqual,
+  getOppositeDirection
 } from "../helpers/helpers.js";
 
 const ROOM_MAX_SIZE = [20, 20]
@@ -14,6 +17,7 @@ const ROOM_MIN_SIZE = [10, 10]
 const MIN_SPACE_BETWEEN_ROOMS = 0
 const MIN_SPACE_BETWEEN_CORRIDORS = 1
 const CORRIDORS_WIDTH = 1
+const MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY = 0.5
 
 // yeah, I could use classes... I wouldn't have private members and
 // I don't need typescript
@@ -48,6 +52,13 @@ export async function Generator(width, height, config, finishCallback) {
     : config.corridorsWidth
       ? config.corridorsWidth
       : CORRIDORS_WIDTH
+  const roomPassagesCountProb = !config
+    ? MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
+    : 'roomPassagesCountProb' in config
+      && config.roomPassagesCountProb < 1
+      && config.roomPassagesCountProb >= 0
+      ? config.roomPassagesCountProb
+      : MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
 
   const rooms = {}
   const corridors = []
@@ -83,11 +94,57 @@ export async function Generator(width, height, config, finishCallback) {
     corridor.doForAllCoordsInside((c) =>
       corridorCells[buildCellKey(c)] = c
     )
+    return corridor
+  }
+  const builCorridorFromPassage = (passage) => {
+    const startKey = buildCellKey(passage.start)
+    const endKey = buildCellKey(passage.end)
+    delete emptyCells[startKey]
+    delete emptyCells[endKey]
+    return addCorridor({
+      cells: {
+        [startKey]: passage.start,
+        [endKey]: passage.end,
+      },
+      start: passage.start
+    })
   }
   const someRoomOverlap = (room) => Object.values(rooms).some((r) => room.roomOverlap(r))
   const coordsAreInARoom = (coords) => roomCells[buildCellKey(coords)]
   const coordsAreInRoomMargin = (coords) => Object.values(rooms).some((r) => r.isInMargin(coords))
   const coordsAreInACorridor = (coords) => corridorCells[buildCellKey(coords)]
+  const findCorridorsByCell = (coords) => corridors.filter((corr) => corr.isInside(coords))
+  const findRoomsByCell = (coords) => Object.values(rooms).filter((room) => room.isInside(coords))
+  const addPassageBetweenCorridors = (corridor, otherCorridor, cell) => {
+    const cellKey = buildCellKey(cell)
+    corridorCells[cellKey] = cell
+    delete emptyCells[cellKey]
+    corridor.addCell(cell)
+    corridor.passages[otherCorridor.id] = {
+      other: otherCorridor.id,
+      cell: cell
+    }
+    otherCorridor.addCell(cell)
+    otherCorridor.passages[corridor.id] = {
+      other: corridor.id,
+      cell: cell
+    }
+  }
+  const addPassageBetweenRoomAndCorridor = (corridor, room, cell) => {
+    const cellKey = buildCellKey(cell)
+    corridorCells[cellKey] = cell
+    delete emptyCells[cellKey]
+    corridor.addCell(cell)
+    corridor.passages[room.id] = {
+      other: room.id,
+      cell: cell
+    }
+    room.passages[corridor.id] = {
+      other: corridor.id,
+      cell: cell
+    }
+  }
+
   const locateNearRooms = async (room, distance) => {
     const roomCoords = {
       tl: [...room.topLeft],
@@ -207,7 +264,7 @@ export async function Generator(width, height, config, finishCallback) {
 
     return found
   }
-  const generateRooms = async (maxRooms) => {
+  const generateRoomsAsync = async (maxRooms) => {
     let tries = 0
     let keys = Object.keys(emptyCells)
 
@@ -416,7 +473,7 @@ export async function Generator(width, height, config, finishCallback) {
         if (lastNode) currentNode = lastNode
 
         for (let i = 0; i < 4; i++) {
-          direction = changeDirectionClockWise(direction)
+          direction = getNewDirectionClockWise(direction)
           const newNearNode = getNewCoordsInDirection(currentNode, direction)
           // console.log('new near node ', newNearNode)
           const push = pushToNearNodes(newNearNode, currentNode, direction)
@@ -598,7 +655,7 @@ export async function Generator(width, height, config, finishCallback) {
       return null
     }
   }
-  const generateAllCorridors = async () => {
+  const generateAllCorridorsAsync = async () => {
     let corridorStart = [1, 1]
     let intersection = await findFirstEmptyZoneBetweenRooms()
 
@@ -633,8 +690,8 @@ export async function Generator(width, height, config, finishCallback) {
     // find all possible passages
     const possiblePassages = {}
     const addCellIfPossible = (cell, newCell, direction) => {
-      if (coordsAreInACorridor(newCell) && !corridor.coordsAreInside(newCell)) {
-        const otherCorridor = corridors.find((c) => c.coordsAreInside(newCell))
+      if (coordsAreInACorridor(newCell) && !corridor.isInside(newCell)) {
+        const otherCorridor = corridors.find((c) => c.isInside(newCell))
         if (!possiblePassages[otherCorridor.id])
           possiblePassages[otherCorridor.id] = { otherCorridor, cells: [] }
         possiblePassages[otherCorridor.id].cells.push({
@@ -657,7 +714,7 @@ export async function Generator(width, height, config, finishCallback) {
         }
       } else {
         for (let i = 0; i < 4; i++) {
-          const checkDirection = changeDirectionClockWise(direction)
+          const checkDirection = getNewDirectionClockWise(direction)
           newCell = getNewCoordsInDirection(cell, checkDirection, 2)
           addCellIfPossible(cell, newCell, checkDirection)
         }
@@ -678,19 +735,135 @@ export async function Generator(width, height, config, finishCallback) {
         newCellObject.direction,
         1
       )
-      const newCellKey = buildCellKey(newCell)
-      corridorCells[newCellKey] = newCell
-      delete emptyCells[newCellKey]
-      corridor.addCell(newCell)
-      corridor.passages[otherCorridor.id] = {
-        other: otherCorridor.id,
-        cell: newCell
+      addPassageBetweenCorridors(corridor, otherCorridor, newCell)
+    })
+  }
+
+  const findPassagesFromRooms = () => {
+    Object.values(rooms).forEach((r) => {
+      console.groupCollapsed('ROOM ', r)
+      // iterate room margin
+      const currentPossiblePassages = {}
+      //const passagesTo = {}
+      let direction = [1, 0]
+      // first cell is the one above the room top left, then iterate clock wise
+      let firstCell = getNewCoordsInDirection(r.topLeft, [0, -1], 1)
+      let currentLoopCell = firstCell
+      let currentCheckCell
+      let currentCheckDirection
+      do {
+        console.log('cur cell ', JSON.stringify(currentLoopCell))
+        currentCheckDirection = getNewDirectionAntiClockWise(direction)
+
+        if (!r.isMarginCorner(currentLoopCell)) {
+          for (let i = 0; i < 2; i++) {
+            currentCheckCell = getNewCoordsInDirection(currentLoopCell, currentCheckDirection, i)
+            const currentCheckKey = buildCellKey(currentCheckCell)
+            if (!emptyCells[currentCheckKey]) {
+              const currentLoopKey = buildCellKey(currentLoopCell)
+              let obj = roomCells[currentCheckKey]
+              const passage = i == 0
+                ? currentLoopCell
+                : {
+                  start: currentLoopCell,
+                  end: getNewCoordsInDirection(currentLoopCell, currentCheckDirection, 1)
+                }
+              if (obj) {
+                const rooms = findRoomsByCell(currentCheckCell)
+                rooms.forEach((room) => {
+                  if (!currentPossiblePassages[room.id])
+                    currentPossiblePassages[room.id] = []
+                  currentPossiblePassages[room.id].push(passage)
+                })
+                break
+              } else {
+                obj = corridorCells[currentCheckKey]
+                if (obj) {
+                  const corridors = findCorridorsByCell(currentCheckCell)
+                  corridors.forEach((corridor) => {
+                    if (!currentPossiblePassages[corridor.id])
+                      currentPossiblePassages[corridor.id] = []
+                    currentPossiblePassages[corridor.id].push(passage)
+                  })
+                  break
+                }
+              }
+            }
+          }
+        }
+
+        currentLoopCell = getNewCoordsInDirection(currentLoopCell, direction)
+        // console.log('> pre ', JSON.stringify(currentLoopCell))
+        if (!r.isInMargin(currentLoopCell)) {
+          // console.log('> NOT in margin');
+          // console.log(r.xMax)
+          // console.log(r.xMin)
+          // console.log(r.yMax)
+          // console.log(r.yMin)
+          currentLoopCell = getNewCoordsInDirection(
+            currentLoopCell,
+            getOppositeDirection(direction)
+          )
+          direction = getNewDirectionClockWise(direction)
+          // console.log('NEW direction ', JSON.stringify(direction));
+          currentLoopCell = getNewCoordsInDirection(
+            currentLoopCell,
+            direction
+          )
+        }
       }
-      otherCorridor.addCell(newCell)
-      otherCorridor.passages[corridor.id] = {
-        other: corridor.id,
-        cell: newCell
-      }
+      while (!coordsEqual(firstCell, currentLoopCell));
+
+      console.log(currentPossiblePassages)
+      console.groupEnd()
+
+      const currentPossiblePassagesIds = Object.keys(currentPossiblePassages)
+      currentPossiblePassagesIds.forEach((passageId) => {
+        const passages = currentPossiblePassages[passageId]
+        const passage = passages[intRandomBetweenRange(0, passages.length - 1)]
+        const roomPassagesCount = Object.keys(r.passages).length
+        if (roomPassagesCount == 0 || Math.random() > roomPassagesCountProb) {
+          if (passageId.substring(0, 4) == 'corr') {
+            const corridor = corridors.find((c) => c.id == passageId)
+            console.log(corridor)
+            // passage to a corridor
+            if (!Array.isArray(passage)) {
+              console.log('ARRAY ', passage)
+              const newCorridor = builCorridorFromPassage(passage)
+              addPassageBetweenCorridors(
+                newCorridor,
+                corridor,
+                passage.end
+              )
+              addPassageBetweenRoomAndCorridor(
+                newCorridor,
+                r,
+                passage.start
+              )
+            } else {
+              addPassageBetweenRoomAndCorridor(
+                corridor,
+                r,
+                passage
+              )
+            }
+          } else if (!Array.isArray(passage)) {
+            // room => impossible to have room passages of length 1
+            // can't draw rooms that near next to another
+            const newCorridor = builCorridorFromPassage(passage)
+            addPassageBetweenRoomAndCorridor(
+              newCorridor,
+              r,
+              passage.start
+            )
+            addPassageBetweenRoomAndCorridor(
+              newCorridor,
+              rooms[passage.id],
+              passage.end
+            )
+          }
+        }
+      })
     })
   }
   // ****************** end fields, properties, methods
@@ -701,13 +874,14 @@ export async function Generator(width, height, config, finishCallback) {
     }
   }
 
-  await generateRooms(
+  await generateRoomsAsync(
     config && config.maxRooms ? config.maxRooms : undefined
   )
-  await generateAllCorridors()
+  await generateAllCorridorsAsync()
   console.log('CORS: ', corridors)
   corridors.forEach((c) => findRandomPassagesToOtherCorridor(c))
 
+  findPassagesFromRooms()
 
   const result = {
     rooms: simpleGetProxy(rooms),
