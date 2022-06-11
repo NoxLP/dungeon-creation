@@ -1,3 +1,4 @@
+import { buildCellKey, coordsEqual } from "../helpers/helpers.js";
 import { simpleGetProxy } from "../helpers/proxy.js";
 
 let currentMaxId = 0
@@ -91,6 +92,8 @@ export function Room(topLeft, bottomRight) {
       this.xMin - 1 == coords[0]
       && this.yMax + 1 == coords[1]
     )
+  this.isAPassage = (coords) =>
+    Object.values(this.passages).some((p) => coordsEqual(p.cell, coords))
 
   return this
 }

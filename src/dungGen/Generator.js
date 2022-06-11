@@ -116,6 +116,21 @@ export async function Generator(width, height, config, finishCallback) {
   const coordsAreInACorridor = (coords) => corridorCells[buildCellKey(coords)]
   const findCorridorsByCell = (coords) => corridors.filter((corr) => corr.isInside(coords))
   const findRoomsByCell = (coords) => Object.values(rooms).filter((room) => room.isInside(coords))
+  const getStraightNeighbours = (coords) => {
+    let direction = [1, 0]
+    const neighbours = []
+    let currentNeighbour
+
+    for (let i = 0; i < 4; i++) {
+      currentNeighbour = getNewCoordsInDirection(coords, direction)
+      if (coordsAreInsideMapIncluding0(currentNeighbour))
+        neighbours.push(currentNeighbour)
+      direction = getNewDirectionClockWise(direction)
+    }
+
+    return neighbours
+  }
+
   const addPassageBetweenCorridors = (corridor, otherCorridor, cell) => {
     const cellKey = buildCellKey(cell)
     corridorCells[cellKey] = cell
@@ -866,47 +881,106 @@ export async function Generator(width, height, config, finishCallback) {
   }
 
   const walkAndRemoveCorridorDeadEnds = (corridor) => {
-    console.log('corr: ', corridor.id)
+    console.groupCollapsed('corr: ', corridor.id)
     console.log('start: ', corridor.start)
     console.log('passages: ', corridor.passages)
-    const cellsToRemove = []
-    corridor.deadEnds = []
-    Object.values(corridor.cells).forEach((cell) => {
-      if (!corridor.hasMoreThanNumberNeighboursInside(cell, 1)
-        && !corridor.isAPassage(cell))
-        corridor.deadEnds.push(cell)
+    const cellsToRemove = new Set()
+
+    // locate deadEnds
+    corridor.deadEnds = {}
+    corridor.doForAllCoordsInside((cell) => {
+      if (!corridor.hasMoreThanNumberNeighboursInside(cell, 1))
+        corridor.deadEnds[buildCellKey(cell)] = cell
     })
     console.log('dends ', corridor.deadEnds)
-    corridor.deadEnds.forEach((deadEnd) => {
-      // console.log(deadEnd)
+
+    //walk corridor from dead ends    
+    Object.values(corridor.deadEnds).forEach((deadEnd) => {
+      console.log('---------- NUEVO DEAD END')
       if (!corridor.isInside(deadEnd))
         console.error('NO ESTA')
+      else if (!corridor.isAPassage(deadEnd)) {
+        console.log(deadEnd)
+        cellsToRemove.add(deadEnd)
 
-      // while()
-      let nextCell = [...deadEnd]
-      let neighbours
-      let currentDirection = [1, 0]
-      // do {
-      //   if (!corridor.passages[buildCellKey(nextCell)]
-      //     && !cellsToRemove.some((c) => coordsEqual(c, nextCell)))
-      //     cellsToRemove.push(nextCell)
+        let neighbours
+        let currentCell = deadEnd
+        let direction = [1, 0]
+        let checkedCells = new Set()
 
-      //   neighbours = corridor.findNeighboursInsideFirstInDirection(
-      //     nextCell,
-      //     currentDirection
-      //   )
-      //   if (!neighbours || neighbours.length != 1
-      //     || corridor.passages[buildCellKey(nextCell)])
-      //     break
-      //   nextCell = neighbours.shift()
-      // } while (nextCell)
+        while (!neighbours
+          || (neighbours.numberOfNeighbours < 3
+            && neighbours.numberOfNeighbours > 0)
+        ) {
+          // has only one neighbour inside corridor => go to first neighbour
+          if (neighbours) {
+            const sameDirectionCell = getNewCoordsInDirection(currentCell, direction, 1)
+            if (corridor.isInside(sameDirectionCell)
+              && !checkedCells.has(buildCellKey(sameDirectionCell))
+            ) {
+              console.log('sameDirectionCell')
+              currentCell = sameDirectionCell
+            } else {
+              console.log('other direction')
+              const firstCell = neighbours.cells[neighbours.firstIndex]
+              if (!checkedCells.has(buildCellKey(firstCell))) {
+                console.log('first direction')
+                currentCell = firstCell
+                direction = neighbours.firstDirection
+              } else {
+                direction = getNewDirectionAntiClockWise(neighbours.firstDirection)
+                currentCell = undefined
+                for (let i = 0; i < neighbours.cells.length; i++) {
+                  console.log('direction')
+                  direction = getNewDirectionClockWise(direction)
+                  const checkingCell = neighbours.cells[i]
+                  if (checkingCell && !checkedCells.has(buildCellKey(checkingCell))) {
+                    console.log('found!!!')
+                    currentCell = checkingCell
+                    break
+                  }
+                  console.log('nope :(')
+                }
+
+                if (!currentCell) break
+              }
+            }
+            console.log(currentCell)
+          }
+          checkedCells.add(buildCellKey(currentCell))
+
+          neighbours = corridor.findFirstNeighbourAndNeighbours(
+            currentCell,
+            direction
+          )
+          console.log(`neighbours of ${JSON.stringify(currentCell)}`, neighbours)
+
+          if (neighbours.numberOfNeighbours < 3
+            && neighbours.numberOfNeighbours > 0) {
+            // previous cell and next cell, or another deadend
+            console.log('neighbours < 3')
+            cellsToRemove.add(currentCell)
+            console.log(cellsToRemove)
+          } else break
+        }
+      }
     })
-    cellsToRemove.forEach((c) => {
-      const cellKey = buildCellKey(c)
-      corridor.removeCell(c)
-      delete corridorCells[cellKey]
-      emptyCells[cellKey] = cellKey
-    })
+
+    console.log('TO REMOVE: ', cellsToRemove)
+
+    console.groupEnd()
+    return cellsToRemove
+  }
+  const removeCorridorsDeadEnds = () => {
+    for (let i = 0; i < 2; i++) {
+      corridors.forEach((c) => {
+        const myCellsToRemove = Array.from(walkAndRemoveCorridorDeadEnds(c))
+        myCellsToRemove.forEach((mc) => {
+          c.removeCell(mc)
+          delete emptyCells[buildCellKey(mc)]
+        })
+      })
+    }
   }
   // ****************** end fields, properties, methods
 
@@ -924,7 +998,7 @@ export async function Generator(width, height, config, finishCallback) {
   corridors.forEach((c) => findRandomPassagesToOtherCorridor(c))
 
   findPassagesFromRooms()
-  corridors.forEach((c) => walkAndRemoveCorridorDeadEnds(c))
+  removeCorridorsDeadEnds()
 
   const result = {
     rooms: simpleGetProxy(rooms),

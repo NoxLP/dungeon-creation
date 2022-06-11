@@ -37,11 +37,3 @@ export const getNewCoordsInDirection = (coords, direction, distance) => (
 
 export const coordsEqual = (coords1, coords2) =>
   coords1[0] == coords2[0] && coords1[1] == coords2[1]
-
-// export const getPerpendicularCells = (cell, direction) => {
-//   const pDirections = getPerpendicularDirections(direction)
-//   return [
-//     getNewCoordsInDirection(cell, pDirections[0]),
-//     getNewCoordsInDirection(cell, pDirections[1]),
-//   ]
-// }

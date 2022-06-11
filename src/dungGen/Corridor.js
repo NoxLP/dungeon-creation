@@ -58,6 +58,11 @@ export function Corridor(data) {
     }
   }
   this.hasMoreThanNumberNeighboursInside = (coords, number) => {
+    if (!this.isInside(coords)) {
+      console.error('NOT in corridor')
+      return undefined
+    }
+
     let direction = [1, 0]
     let directionsWithCorridorCell = 0
     let currentNeighbour
@@ -78,23 +83,32 @@ export function Corridor(data) {
     if (this.passages[key])
       delete this.passages[key]
     if (this.deadEnds[key])
-      delete this.passages[key]
+      delete this.deadEnds[key]
   }
-  this.findNeighboursInsideFirstInDirection = (coords, direction) => {
+  this.findFirstNeighbourAndNeighbours = (coords, direction) => {
     if (!this.isInside(coords)) {
       console.error('NOT in corridor')
       return undefined
     }
 
-    const neighbours = []
+    const neighbours = [undefined, undefined, undefined, undefined]
+    let firstDirection, firstIndex
+    let numberOfNeighbours = 0
     let currentNeighbour
     for (let i = 0; i < 4; i++) {
       currentNeighbour = getNewCoordsInDirection(coords, direction)
-      if (this.isInside(currentNeighbour)) neighbours.push(currentNeighbour)
+      if (this.isInside(currentNeighbour)) {
+        if (!firstDirection) {
+          firstDirection = [...direction]
+          firstIndex = i
+        }
+        numberOfNeighbours++
+        neighbours[i] = currentNeighbour
+      }
       direction = getNewDirectionClockWise(direction)
     }
 
-    return neighbours
+    return { cells: neighbours, firstDirection, firstIndex, numberOfNeighbours }
   }
   this.isAPassage = (coords) =>
     Object.values(this.passages).some((p) => coordsEqual(p.cell, coords))
