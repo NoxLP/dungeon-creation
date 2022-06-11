@@ -1,4 +1,4 @@
-import { buildCellKey, coordsEqual } from "../helpers/helpers.js";
+import { coordsEqual } from "../helpers/helpers.js";
 import { simpleGetProxy } from "../helpers/proxy.js";
 
 let currentMaxId = 0
