@@ -15,7 +15,111 @@
     >
     </canvas>
     <div id="generando" style="background-color: cornflowerblue">GENERANDO</div>
-
+    <div
+      id="form"
+      style="border: solid 1px black; margin-top: 20px; padding: 10px"
+    >
+      <button id="clean" style="margin-top: 10px; width: 100%">
+        Clean canvas
+      </button>
+      <label>
+        Max. intentos al crear
+        <input
+          type="number"
+          id="maxTriesInput"
+          style="width: 50px; margin-right: 30px; margin-top: 10px"
+          value="625"
+        />
+      </label>
+      <label>
+        Grid width
+        <input
+          type="number"
+          id="gridWidthInput"
+          style="width: 50px; margin-right: 30px"
+          value="100"
+        />
+      </label>
+      <label>
+        Grid height
+        <input
+          type="number"
+          id="gridHeightInput"
+          style="width: 50px; margin-right: 30px"
+          value="50"
+        />
+      </label>
+      <br />
+      <label>
+        Tamaño max hab. X
+        <input
+          type="number"
+          id="roomXMaxInput"
+          style="width: 50px; margin-right: 30px; margin-top: 10px"
+          value="15"
+        />
+      </label>
+      <label>
+        Tamaño max hab. Y
+        <input
+          type="number"
+          id="roomYMaxInput"
+          style="width: 50px; margin-right: 30px"
+          value="15"
+        />
+      </label>
+      <label>
+        Tamaño min hab. X
+        <input
+          type="number"
+          id="roomXMinInput"
+          style="width: 50px; margin-right: 30px"
+          value="5"
+        />
+      </label>
+      <label>
+        Tamaño min hab. Y
+        <input
+          type="number"
+          id="roomYMinInput"
+          style="width: 50px; margin-right: 30px"
+          value="5"
+        />
+      </label>
+      <br />
+      <label>
+        Probabilidad hab. con + de una conexión
+        <input
+          type="number"
+          id="roomProbInput"
+          style="width: 50px; margin-right: 30px; margin-top: 10px"
+          value="0.5"
+        />
+      </label>
+      <br />
+      <label>
+        Espacio mín entre hab.
+        <input
+          type="number"
+          id="roomSpaceInput"
+          style="width: 50px; margin-right: 30px; margin-top: 10px"
+          value="1"
+        />
+      </label>
+      <label>
+        Espacio mín entre pasillos
+        <input
+          type="number"
+          id="corridorSpaceInput"
+          style="width: 50px; margin-right: 30px"
+          value="1"
+        />
+      </label>
+      <br />
+      <button id="configSubmit" style="margin-top: 10px; width: 100%">
+        Crea dungeon
+      </button>
+    </div>
     <script src="src/index.js" type="module"></script>
   </body>
 </html>

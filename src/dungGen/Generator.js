@@ -13,8 +13,8 @@ import {
 } from "../helpers/helpers.js";
 
 // ****************** config variables
-const ROOM_MAX_SIZE = [20, 20]
-const ROOM_MIN_SIZE = [10, 10]
+const ROOM_MAX_SIZE = [15, 15]
+const ROOM_MIN_SIZE = [5, 5]
 const MIN_SPACE_BETWEEN_ROOMS = 0
 const MIN_SPACE_BETWEEN_CORRIDORS = 1
 const CORRIDORS_WIDTH = 1
@@ -25,12 +25,7 @@ let containerWidth, containerHeight, roomMaxSize, roomMinSize, maxTries,
   roomPassagesCountProb
 
 // ****************** private fields
-const rooms = {}
-const corridors = []
-const emptyCells = {}
-const roomCells = {}
-const corridorCells = {}
-const zonesChecked = []
+let rooms, corridors, emptyCells, roomCells, corridorCells, zonesChecked
 
 // ****************** private methods
 
@@ -47,15 +42,6 @@ const getCoordsFromKey = (key) => {
   const match = key.match(/^(\d+),(\d+)/)
   if (match) return [parseInt(match[1]), parseInt(match[2])]
   return null
-}
-
-const addRoom = (room) => {
-  rooms[room.id] = room
-  room.doForAllCoordsInside((coords) => {
-    const coordKey = buildCellKey(coords)
-    if (coordKey in emptyCells) delete emptyCells[coordKey]
-    roomCells[coordKey] = true
-  })
 }
 
 const addCorridor = (corridorData) => {
@@ -191,13 +177,22 @@ const someNearRoomInMinimumSpace = async (room) => {
 
 const generateRoomsAsync = async (maxRooms) => {
   let tries = 0
-  let keys = Object.keys(emptyCells)
+  const testedKeys = {}
 
   while ((!maxRooms || rooms.length < maxRooms) && tries < maxTries) {
     tries++
-    const topLeftCoords = getCoordsFromKey(
-      keys[intRandomBetweenRange(0, keys.length - 1)]
-    )
+    const keys = Object.keys(emptyCells)
+    let topLeftCoords
+
+    let coordsTries = 0
+    while (!topLeftCoords || testedKeys[buildCellKey(topLeftCoords)]
+      && coordsTries < maxTries) {
+      coordsTries++
+      topLeftCoords = getCoordsFromKey(
+        keys[intRandomBetweenRange(0, keys.length - 1)]
+      )
+    }
+    testedKeys[topLeftCoords] = 1
 
     const testedHeights = {}
     const testedWidths = {}
@@ -234,8 +229,13 @@ const generateRoomsAsync = async (maxRooms) => {
     }
 
     if (room) {
-      addRoom(room)
-      keys = Object.keys(emptyCells)
+      rooms[room.id] = room
+      room.doForAllCoordsInside((coords) => {
+        const coordKey = buildCellKey(coords)
+        if (coordKey in emptyCells) delete emptyCells[coordKey]
+        testedKeys[coordKey] = 1
+        roomCells[coordKey] = true
+      })
     }
   }
 
@@ -545,6 +545,7 @@ const findRandomPassagesToOtherCorridor = (corridor) => {
   const addCellIfPossible = (cell, newCell, direction) => {
     if (coordsAreInACorridor(newCell) && !corridor.isInside(newCell)) {
       const otherCorridor = corridors.find((c) => c.isInside(newCell))
+      if (!otherCorridor) return
       if (!possiblePassages[otherCorridor.id])
         possiblePassages[otherCorridor.id] = { otherCorridor, cells: [] }
       possiblePassages[otherCorridor.id].cells.push({
@@ -805,7 +806,6 @@ const removeCorridorsDeadEnds = () => {
 export async function Generator(width, height, config, finishCallback) {
   containerWidth = width;
   containerHeight = height;
-
   roomMaxSize = !config
     ? ROOM_MAX_SIZE
     : config.roomMaxSize
@@ -840,6 +840,13 @@ export async function Generator(width, height, config, finishCallback) {
       ? config.roomPassagesCountProb
       : MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
 
+  rooms = {}
+  corridors = []
+  emptyCells = {}
+  roomCells = {}
+  corridorCells = {}
+  zonesChecked = []
+
   for (let i = 0; i < containerWidth; i++) {
     for (let j = 0; j < containerHeight; j++) {
       emptyCells[buildCellKey([i, j])] = true
@@ -862,6 +869,6 @@ export async function Generator(width, height, config, finishCallback) {
     corridors: simpleGetProxy(corridors),
   }
 
-  if (finishCallback) finishCallback()
+  if (finishCallback) finishCallback(result)
   return result
 }

@@ -2,6 +2,7 @@ const RATIO_ADJUST = 1
 const canvas = document.getElementById('container')
 const ctx = canvas.getContext ? canvas.getContext('2d') : undefined
 let ratio = [1, 1]
+let lastCorridor = -1
 
 export function setRatio(x, y) {
   ratio = [
@@ -14,6 +15,12 @@ const applyRatio = (num, coord) => {
   if (coord == 'x') return num * ratio[0] * RATIO_ADJUST
   if (coord == 'y') return num * ratio[1] * RATIO_ADJUST
   return undefined
+}
+export function cleanCanvas() {
+  if (ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    lastCorridor = -1
+  }
 }
 export function drawGrid(width, height) {
   if (ctx) {
@@ -74,7 +81,7 @@ const CORRIDOR_COLORS = [
 export function drawCorridor(corridor, corridorWidth) {
   if (ctx) {
     ctx.fillStyle = CORRIDOR_COLORS.length > 0 ?
-      `#${CORRIDOR_COLORS.pop()}` :
+      `#${CORRIDOR_COLORS[++lastCorridor]}` :
       Math.floor(Math.random() * 16777215).toString(16)
     ctx.font = "14px Arial"
     ctx.fillText(
