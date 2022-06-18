@@ -1,7 +1,7 @@
-import { Room } from "./Room.js";
-import { Corridor } from "./Corridor.js";
-import { intRandomBetweenRange } from "../helpers/random.js";
-import { simpleGetProxy } from "../helpers/proxy.js";
+import { Room } from './Room.js'
+import { Corridor } from './Corridor.js'
+import { intRandomBetweenRange } from '../helpers/random.js'
+import { simpleGetProxy } from '../helpers/proxy.js'
 import {
   buildCellKey,
   getNewDirectionClockWise,
@@ -9,8 +9,8 @@ import {
   getPerpendicularDirections,
   getNewCoordsInDirection,
   coordsEqual,
-  getOppositeDirection
-} from "../helpers/helpers.js";
+  getOppositeDirection,
+} from '../helpers/helpers.js'
 
 // ****************** config variables
 const ROOM_MAX_SIZE = [15, 15]
@@ -20,8 +20,14 @@ const MIN_SPACE_BETWEEN_CORRIDORS = 1
 const CORRIDORS_WIDTH = 1
 const MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY = 0.5
 
-let containerWidth, containerHeight, roomMaxSize, roomMinSize, maxTries,
-  minSpaceBetweenRooms, minSpaceBetweenCorridors, corridorsWidth,
+let dungeonWidth,
+  dungeonHeight,
+  roomMaxSize,
+  roomMinSize,
+  maxTries,
+  minSpaceBetweenRooms,
+  minSpaceBetweenCorridors,
+  corridorsWidth,
   roomPassagesCountProb
 
 // ****************** private fields
@@ -31,12 +37,16 @@ let rooms, corridors, emptyCells, roomCells, corridorCells, zonesChecked
 
 // ******* helpers
 const coordsAreInsideMap = (coords) =>
-  coords[0] > 0 && coords[0] < containerWidth
-  && coords[1] > 0 && coords[1] < containerHeight
+  coords[0] > 0 &&
+  coords[0] < dungeonWidth &&
+  coords[1] > 0 &&
+  coords[1] < dungeonHeight
 
 const coordsAreInsideMapIncluding0 = (coords) =>
-  coords[0] >= 0 && coords[0] < containerWidth
-  && coords[1] >= 0 && coords[1] < containerHeight
+  coords[0] >= 0 &&
+  coords[0] < dungeonWidth &&
+  coords[1] >= 0 &&
+  coords[1] < dungeonHeight
 
 const getCoordsFromKey = (key) => {
   const match = key.match(/^(\d+),(\d+)/)
@@ -47,9 +57,7 @@ const getCoordsFromKey = (key) => {
 const addCorridor = (corridorData) => {
   const corridor = new Corridor(corridorData)
   corridors.push(corridor)
-  corridor.doForAllCoordsInside((c) =>
-    corridorCells[buildCellKey(c)] = c
-  )
+  corridor.doForAllCoordsInside((c) => (corridorCells[buildCellKey(c)] = c))
   return corridor
 }
 
@@ -63,21 +71,25 @@ const builCorridorFromPassage = (passage) => {
       [startKey]: passage.start,
       [endKey]: passage.end,
     },
-    start: passage.start
+    start: passage.start,
   })
 }
 
-const someRoomOverlap = (room) => Object.values(rooms).some((r) => room.roomOverlap(r))
+const someRoomOverlap = (room) =>
+  Object.values(rooms).some((r) => room.roomOverlap(r))
 
 const coordsAreInARoom = (coords) => roomCells[buildCellKey(coords)]
 
-const coordsAreInRoomMargin = (coords) => Object.values(rooms).some((r) => r.isInMargin(coords))
+const coordsAreInRoomMargin = (coords) =>
+  Object.values(rooms).some((r) => r.isInMargin(coords))
 
 const coordsAreInACorridor = (coords) => corridorCells[buildCellKey(coords)]
 
-const findCorridorsByCell = (coords) => corridors.filter((corr) => corr.isInside(coords))
+const findCorridorsByCell = (coords) =>
+  corridors.filter((corr) => corr.isInside(coords))
 
-const findRoomsByCell = (coords) => Object.values(rooms).filter((room) => room.isInside(coords))
+const findRoomsByCell = (coords) =>
+  Object.values(rooms).filter((room) => room.isInside(coords))
 
 const addPassageBetweenCorridors = (corridor, otherCorridor, cell) => {
   const cellKey = buildCellKey(cell)
@@ -86,12 +98,12 @@ const addPassageBetweenCorridors = (corridor, otherCorridor, cell) => {
   corridor.addCell(cell)
   corridor.passages[otherCorridor.id] = {
     other: otherCorridor.id,
-    cell: cell
+    cell: cell,
   }
   otherCorridor.addCell(cell)
   otherCorridor.passages[corridor.id] = {
     other: corridor.id,
-    cell: cell
+    cell: cell,
   }
 }
 
@@ -102,14 +114,13 @@ const addPassageBetweenRoomAndCorridor = (corridor, room, cell) => {
   corridor.addCell(cell)
   corridor.passages[room.id] = {
     other: room.id,
-    cell: cell
+    cell: cell,
   }
   room.passages[corridor.id] = {
     other: corridor.id,
-    cell: cell
+    cell: cell,
   }
 }
-
 
 // ******* generate rooms
 const someNearRoomInMinimumSpace = async (room) => {
@@ -136,19 +147,18 @@ const someNearRoomInMinimumSpace = async (room) => {
     if (horizontal) {
       start = firstPoint[0]
       end = secondPoint[0] + 1
-      buildCoords = (i) => ([i, firstPoint[1]])
+      buildCoords = (i) => [i, firstPoint[1]]
     } else {
       start = firstPoint[1]
       end = secondPoint[1] + 1
-      buildCoords = (i) => ([firstPoint[0], i])
+      buildCoords = (i) => [firstPoint[0], i]
     }
 
     let i = start
     while (!found && i < end) {
       i++
       currentCoords = buildCoords(i)
-      if (!coordsAreInsideMap(currentCoords))
-        continue
+      if (!coordsAreInsideMap(currentCoords)) continue
       if (coordsAreInARoom(currentCoords)) {
         const room = Object.values(rooms).find((r) => r.isInside(currentCoords))
         if (room) {
@@ -185,8 +195,10 @@ const generateRoomsAsync = async (maxRooms) => {
     let topLeftCoords
 
     let coordsTries = 0
-    while (!topLeftCoords || testedKeys[buildCellKey(topLeftCoords)]
-      && coordsTries < maxTries) {
+    while (
+      !topLeftCoords ||
+      (testedKeys[buildCellKey(topLeftCoords)] && coordsTries < maxTries)
+    ) {
       coordsTries++
       topLeftCoords = getCoordsFromKey(
         keys[intRandomBetweenRange(0, keys.length - 1)]
@@ -213,16 +225,19 @@ const generateRoomsAsync = async (maxRooms) => {
       )
       const bottomRightCoords = [
         topLeftCoords[0] + currentRoomWidth,
-        topLeftCoords[1] + currentRoomHeight
+        topLeftCoords[1] + currentRoomHeight,
       ]
-      if (!coordsAreInsideMap(bottomRightCoords)
-        || coordsAreInARoom(bottomRightCoords))
+      if (
+        !coordsAreInsideMap(bottomRightCoords) ||
+        coordsAreInARoom(bottomRightCoords)
+      )
         continue
 
       room = new Room(topLeftCoords, bottomRightCoords)
-      if (someRoomOverlap(room)
-        || (minSpaceBetweenRooms > 0
-          && await someNearRoomInMinimumSpace(room))) {
+      if (
+        someRoomOverlap(room) ||
+        (minSpaceBetweenRooms > 0 && (await someNearRoomInMinimumSpace(room)))
+      ) {
         room = undefined
         continue
       }
@@ -242,32 +257,28 @@ const generateRoomsAsync = async (maxRooms) => {
   console.log('>>>>>>>>>> DONE GENERATING ROOMS')
 }
 
-
 // ******* generate corridors
 const canBeACorridor = (coords, corridor, lastNode, direction) => {
   const coordsAreOk = (c) =>
-    emptyCells[buildCellKey(c)]
-    && coordsAreInsideMapIncluding0(c)
-  if (!coordsAreOk(coords) || coordsAreInRoomMargin(coords))
-    return false
+    emptyCells[buildCellKey(c)] && coordsAreInsideMapIncluding0(c)
+  if (!coordsAreOk(coords) || coordsAreInRoomMargin(coords)) return false
 
   const minSpace = minSpaceBetweenCorridors + corridorsWidth
-  const coordsAreInCorridor = (c) =>
-    corridor[buildCellKey(c)]
+  const coordsAreInCorridor = (c) => corridor[buildCellKey(c)]
   const perpendicularDirections = getPerpendicularDirections(direction)
 
   for (let i = 1; i < minSpace; i++) {
     let checkCoords = [
-      coords[0] + (direction[0] * i),
-      coords[1] + (direction[1] * i)
+      coords[0] + direction[0] * i,
+      coords[1] + direction[1] * i,
     ]
     if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords))
       return false
 
     for (let d = 0; d < 2; d++) {
       checkCoords = [
-        coords[0] + (perpendicularDirections[d][0] * i),
-        coords[1] + (perpendicularDirections[d][1] * i)
+        coords[0] + perpendicularDirections[d][0] * i,
+        coords[1] + perpendicularDirections[d][1] * i,
       ]
       if (!coordsAreOk(checkCoords) || coordsAreInCorridor(checkCoords))
         return false
@@ -278,11 +289,13 @@ const canBeACorridor = (coords, corridor, lastNode, direction) => {
 }
 
 const generateCorridor = (start) => {
-  let nearNodes = [{
-    node: start,
-    last: undefined,
-    direction: [1, 0]
-  }]
+  let nearNodes = [
+    {
+      node: start,
+      last: undefined,
+      direction: [1, 0],
+    },
+  ]
   const checkedNodes = []
   let currentNode, lastNode, checkDirection
   const corridor = {}
@@ -295,30 +308,30 @@ const generateCorridor = (start) => {
     checkedNodes.push(node)
   }
   const unshiftToNearNodes = (node, currentNode, direction) => {
-    if (emptyCells[buildCellKey(node)]
-      && !checkedNodes.some((n) =>
-        n[0] == node[0] && n[1] == node[1])
-      && !nearNodes.some((n) =>
-        n[0] == node[0] && n[1] == node[1])) {
+    if (
+      emptyCells[buildCellKey(node)] &&
+      !checkedNodes.some((n) => n[0] == node[0] && n[1] == node[1]) &&
+      !nearNodes.some((n) => n[0] == node[0] && n[1] == node[1])
+    ) {
       nearNodes.unshift({
         node,
         last: currentNode,
-        direction
+        direction,
       })
       return true
     }
     return false
   }
   const pushToNearNodes = (node, currentNode, direction) => {
-    if (emptyCells[buildCellKey(node)]
-      && !checkedNodes.some((n) =>
-        n[0] == node[0] && n[1] == node[1])
-      && !nearNodes.some((n) =>
-        n[0] == node[0] && n[1] == node[1])) {
+    if (
+      emptyCells[buildCellKey(node)] &&
+      !checkedNodes.some((n) => n[0] == node[0] && n[1] == node[1]) &&
+      !nearNodes.some((n) => n[0] == node[0] && n[1] == node[1])
+    ) {
       nearNodes.push({
         node,
         last: currentNode,
-        direction
+        direction,
       })
       return true
     }
@@ -353,19 +366,22 @@ const generateCorridor = (start) => {
 
   return {
     cells: corridor,
-    start
+    start,
   }
 }
 
 const zoneIsAlreadyChecked = (zone) => {
-  return zonesChecked.some((z) => (
-    z.start[0] == zone.start[0] && z.start[1] == zone.start[1] &&
-    z.end[0] == zone.end[0] && z.end[1] == zone.end[1]
-  ))
+  return zonesChecked.some(
+    (z) =>
+      z.start[0] == zone.start[0] &&
+      z.start[1] == zone.start[1] &&
+      z.end[0] == zone.end[0] &&
+      z.end[1] == zone.end[1]
+  )
 }
 
 const roomRayIntersectsRoom = async (room, directionName) => {
-  // goes south from bottom left, right and center, 
+  // goes south from bottom left, right and center,
   // searching other room
   const startingPoints = []
   let direction = []
@@ -379,7 +395,7 @@ const roomRayIntersectsRoom = async (room, directionName) => {
       if (room.height < 5 || room.height >= 8)
         startingPoints.push([room.topRight[0], room.center[1]])
       direction = [1, 0]
-      break;
+      break
     case 'west':
       if (room.height >= 5) {
         startingPoints.push(room.topLeft)
@@ -388,7 +404,7 @@ const roomRayIntersectsRoom = async (room, directionName) => {
       if (room.height < 5 || room.height >= 8)
         startingPoints.push([room.topLeft[0], room.center[1]])
       direction = [-1, 0]
-      break;
+      break
     case 'north':
       if (room.width >= 5) {
         startingPoints.push(room.topLeft)
@@ -397,7 +413,7 @@ const roomRayIntersectsRoom = async (room, directionName) => {
       if (room.width < 5 || room.width >= 8)
         startingPoints.push([room.center[0], room.topRight[1]])
       direction = [0, -1]
-      break;
+      break
     case 'south':
       if (room.width >= 5) {
         startingPoints.push(room.bottomLeft)
@@ -406,7 +422,7 @@ const roomRayIntersectsRoom = async (room, directionName) => {
       if (room.width < 5 || room.width >= 8)
         startingPoints.push([room.center[0], room.bottomRight[1]])
       direction = [0, 1]
-      break;
+      break
   }
 
   const rays = startingPoints.map((startingPoint) => {
@@ -423,8 +439,10 @@ const roomRayIntersectsRoom = async (room, directionName) => {
         tries++
         currentPoint = getNewCoordsInDirection(currentPoint, direction)
 
-        if (!coordsAreInsideMap(currentPoint)
-          || !emptyCells[buildCellKey(currentPoint)]) {
+        if (
+          !coordsAreInsideMap(currentPoint) ||
+          !emptyCells[buildCellKey(currentPoint)]
+        ) {
           // intersects!
           if (!coordsAreInsideMap(currentPoint)) {
             currentPoint = [
@@ -436,7 +454,7 @@ const roomRayIntersectsRoom = async (room, directionName) => {
 
           intersectionPoints.push({
             point: currentPoint,
-            distance: distance
+            distance: distance,
           })
 
           if (distance > maxDistance) {
@@ -457,15 +475,14 @@ const roomRayIntersectsRoom = async (room, directionName) => {
 
       if (intersectionPoints.length > 0) {
         resolve({
-          start: intersectionPoints.length == 1 || maxDistanceIndex == 0
-            ? startingPoint
-            : intersectionPoints[maxDistanceIndex - 1].point,
+          start:
+            intersectionPoints.length == 1 || maxDistanceIndex == 0
+              ? startingPoint
+              : intersectionPoints[maxDistanceIndex - 1].point,
           end: intersectionPoints[maxDistanceIndex].point,
-          distance: intersectionPoints[maxDistanceIndex].distance
+          distance: intersectionPoints[maxDistanceIndex].distance,
         })
-      }
-      else
-        resolve(null)
+      } else resolve(null)
     })
   })
 
@@ -474,13 +491,14 @@ const roomRayIntersectsRoom = async (room, directionName) => {
 
     if (intersections.some((i) => i)) {
       intersections = intersections
-        .filter((i) => i
-          && !zoneIsAlreadyChecked(i)
-          && i.distance >= ((2 * minSpaceBetweenCorridors) + corridorsWidth)
+        .filter(
+          (i) =>
+            i &&
+            !zoneIsAlreadyChecked(i) &&
+            i.distance >= 2 * minSpaceBetweenCorridors + corridorsWidth
         )
         .sort((a, b) => b.distance - a.distance)
-      if (intersections && intersections.length > 0)
-        return intersections[0]
+      if (intersections && intersections.length > 0) return intersections[0]
     }
 
     return Promise.reject(null)
@@ -495,7 +513,9 @@ const findFirstEmptyZoneBetweenRooms = async () => {
   const intersectionsPromises = []
   for (let i = 0; i < myRooms.length; i++) {
     for (let d = 0; d < 4; d++) {
-      intersectionsPromises.push(roomRayIntersectsRoom(myRooms[i], directions[d]))
+      intersectionsPromises.push(
+        roomRayIntersectsRoom(myRooms[i], directions[d])
+      )
     }
   }
 
@@ -518,23 +538,24 @@ const generateAllCorridorsAsync = async () => {
     const yMin = Math.min(intersection.start[1], intersection.end[1])
     corridorStart = [
       Math.floor(
-        Math.abs(intersection.start[0] - intersection.end[0]) * 0.5 + xMin),
+        Math.abs(intersection.start[0] - intersection.end[0]) * 0.5 + xMin
+      ),
       Math.floor(
-        Math.abs(intersection.start[1] - intersection.end[1]) * 0.5 + yMin),
+        Math.abs(intersection.start[1] - intersection.end[1]) * 0.5 + yMin
+      ),
     ]
 
     let currentCorridor = generateCorridor(corridorStart)
     if (currentCorridor && Object.keys(currentCorridor.cells).length > 2) {
       addCorridor(currentCorridor)
     } else if (Object.keys(currentCorridor.cells).length <= 2) {
-      Object.keys(currentCorridor.cells).forEach((k) => emptyCells[k] = true)
+      Object.keys(currentCorridor.cells).forEach((k) => (emptyCells[k] = true))
     }
 
     intersection = await findFirstEmptyZoneBetweenRooms()
   }
   console.log('>>>>>>>>>> DONE GENERATING CORRIDORS')
 }
-
 
 // ******* generate passages
 const findRandomPassagesToOtherCorridor = (corridor) => {
@@ -551,7 +572,7 @@ const findRandomPassagesToOtherCorridor = (corridor) => {
       possiblePassages[otherCorridor.id].cells.push({
         newCell,
         own: cell,
-        direction
+        direction,
       })
     }
   }
@@ -580,9 +601,10 @@ const findRandomPassagesToOtherCorridor = (corridor) => {
   // create one passage per "other" corridor
   Object.keys(possiblePassages).forEach((key) => {
     const otherCorridor = possiblePassages[key].otherCorridor
-    const newCellObject = possiblePassages[key].cells[
-      intRandomBetweenRange(0, possiblePassages[key].cells.length - 1)
-    ]
+    const newCellObject =
+      possiblePassages[key].cells[
+        intRandomBetweenRange(0, possiblePassages[key].cells.length - 1)
+      ]
     const newCell = getNewCoordsInDirection(
       newCellObject.own,
       newCellObject.direction,
@@ -610,17 +632,26 @@ const findPassagesFromRooms = () => {
 
       if (!r.isMarginCorner(currentLoopCell)) {
         for (let i = 0; i < 2; i++) {
-          currentCheckCell = getNewCoordsInDirection(currentLoopCell, currentCheckDirection, i)
+          currentCheckCell = getNewCoordsInDirection(
+            currentLoopCell,
+            currentCheckDirection,
+            i
+          )
           const currentCheckKey = buildCellKey(currentCheckCell)
           if (!emptyCells[currentCheckKey]) {
             const currentLoopKey = buildCellKey(currentLoopCell)
             let obj = roomCells[currentCheckKey]
-            const passage = i == 0
-              ? currentLoopCell
-              : {
-                start: currentLoopCell,
-                end: getNewCoordsInDirection(currentLoopCell, currentCheckDirection, 1)
-              }
+            const passage =
+              i == 0
+                ? currentLoopCell
+                : {
+                    start: currentLoopCell,
+                    end: getNewCoordsInDirection(
+                      currentLoopCell,
+                      currentCheckDirection,
+                      1
+                    ),
+                  }
             if (obj) {
               const rooms = findRoomsByCell(currentCheckCell)
               rooms.forEach((room) => {
@@ -652,12 +683,9 @@ const findPassagesFromRooms = () => {
           getOppositeDirection(direction)
         )
         direction = getNewDirectionClockWise(direction)
-        currentLoopCell = getNewCoordsInDirection(
-          currentLoopCell,
-          direction
-        )
+        currentLoopCell = getNewCoordsInDirection(currentLoopCell, direction)
       }
-    } while (!coordsEqual(firstCell, currentLoopCell));
+    } while (!coordsEqual(firstCell, currentLoopCell))
 
     const currentPossiblePassagesIds = Object.keys(currentPossiblePassages)
     currentPossiblePassagesIds.forEach((passageId) => {
@@ -671,32 +699,16 @@ const findPassagesFromRooms = () => {
           const corridor = corridors.find((c) => c.id == passageId)
           if (!Array.isArray(passage)) {
             const newCorridor = builCorridorFromPassage(passage)
-            addPassageBetweenCorridors(
-              newCorridor,
-              corridor,
-              passage.end
-            )
-            addPassageBetweenRoomAndCorridor(
-              newCorridor,
-              r,
-              passage.start
-            )
+            addPassageBetweenCorridors(newCorridor, corridor, passage.end)
+            addPassageBetweenRoomAndCorridor(newCorridor, r, passage.start)
           } else {
-            addPassageBetweenRoomAndCorridor(
-              corridor,
-              r,
-              passage
-            )
+            addPassageBetweenRoomAndCorridor(corridor, r, passage)
           }
         } else if (!Array.isArray(passage)) {
           // room => impossible to have room passages of length 1
           // can't draw rooms that near next to another
           const newCorridor = builCorridorFromPassage(passage)
-          addPassageBetweenRoomAndCorridor(
-            newCorridor,
-            r,
-            passage.start
-          )
+          addPassageBetweenRoomAndCorridor(newCorridor, r, passage.start)
           addPassageBetweenRoomAndCorridor(
             newCorridor,
             rooms[passage.id],
@@ -709,7 +721,6 @@ const findPassagesFromRooms = () => {
   console.log('>>>>>>>>>> DONE FINDING PASSAGES FROM ROOMS')
 }
 
-
 // ******* remove dead ends
 const walkCorridorFromDeadEndsAndGetCellsToRemove = (corridor) => {
   const cellsToRemove = new Set()
@@ -721,7 +732,7 @@ const walkCorridorFromDeadEndsAndGetCellsToRemove = (corridor) => {
       corridor.deadEnds[buildCellKey(cell)] = cell
   })
 
-  //walk corridor from dead ends    
+  //walk corridor from dead ends
   Object.values(corridor.deadEnds).forEach((deadEnd) => {
     if (!corridor.isAPassage(deadEnd)) {
       cellsToRemove.add(deadEnd)
@@ -731,15 +742,20 @@ const walkCorridorFromDeadEndsAndGetCellsToRemove = (corridor) => {
       let direction = [1, 0]
       let checkedCells = new Set()
 
-      while (!neighbours
-        || (neighbours.numberOfNeighbours < 3
-          && neighbours.numberOfNeighbours > 0)
+      while (
+        !neighbours ||
+        (neighbours.numberOfNeighbours < 3 && neighbours.numberOfNeighbours > 0)
       ) {
         // has only one neighbour inside corridor => go to first neighbour
         if (neighbours) {
-          const sameDirectionCell = getNewCoordsInDirection(currentCell, direction, 1)
-          if (corridor.isInside(sameDirectionCell)
-            && !checkedCells.has(buildCellKey(sameDirectionCell))
+          const sameDirectionCell = getNewCoordsInDirection(
+            currentCell,
+            direction,
+            1
+          )
+          if (
+            corridor.isInside(sameDirectionCell) &&
+            !checkedCells.has(buildCellKey(sameDirectionCell))
           ) {
             currentCell = sameDirectionCell
           } else {
@@ -748,12 +764,17 @@ const walkCorridorFromDeadEndsAndGetCellsToRemove = (corridor) => {
               currentCell = firstCell
               direction = neighbours.firstDirection
             } else {
-              direction = getNewDirectionAntiClockWise(neighbours.firstDirection)
+              direction = getNewDirectionAntiClockWise(
+                neighbours.firstDirection
+              )
               currentCell = undefined
               for (let i = 0; i < neighbours.cells.length; i++) {
                 direction = getNewDirectionClockWise(direction)
                 const checkingCell = neighbours.cells[i]
-                if (checkingCell && !checkedCells.has(buildCellKey(checkingCell))) {
+                if (
+                  checkingCell &&
+                  !checkedCells.has(buildCellKey(checkingCell))
+                ) {
                   currentCell = checkingCell
                   break
                 }
@@ -770,8 +791,10 @@ const walkCorridorFromDeadEndsAndGetCellsToRemove = (corridor) => {
           direction
         )
 
-        if (neighbours.numberOfNeighbours < 3
-          && neighbours.numberOfNeighbours > 0) {
+        if (
+          neighbours.numberOfNeighbours < 3 &&
+          neighbours.numberOfNeighbours > 0
+        ) {
           // previous cell and next cell, or another deadend
           cellsToRemove.add(currentCell)
         } else break
@@ -800,45 +823,68 @@ const removeCorridorsDeadEnds = () => {
   console.log('>>>>>>>>>> DONE REMOVING DEAD ENDS')
 }
 
+export const buildJSONData = () => {
+  /*
+  {
+    rooms: simpleGetProxy(rooms),
+    emptyCells: simpleGetProxy(emptyCells),
+    roomCells: simpleGetProxy(roomCells),
+    corridors: simpleGetProxy(corridors),
+  }
+  */
+  if (!generator) return undefined
+  return (
+    'data:text/json;charset=utf-8,' +
+    encodeURIComponent(
+      JSON.stringify({
+        dungeonWidth,
+        dungeonHeight,
+        rooms,
+        emptyCells,
+        corridors,
+      })
+    )
+  )
+}
 
 // yeah, I could use classes... I wouldn't have private members and
 // I don't need typescript
 export async function Generator(width, height, config, finishCallback) {
-  containerWidth = width;
-  containerHeight = height;
+  dungeonWidth = width
+  dungeonHeight = height
   roomMaxSize = !config
     ? ROOM_MAX_SIZE
     : config.roomMaxSize
-      ? config.roomMaxSize
-      : ROOM_MAX_SIZE;
+    ? config.roomMaxSize
+    : ROOM_MAX_SIZE
   roomMinSize = !config
     ? ROOM_MIN_SIZE
     : config.roomMinSize
-      ? config.roomMinSize
-      : ROOM_MIN_SIZE;
-  maxTries = config.maxTries || containerWidth * containerHeight * 0.25
+    ? config.roomMinSize
+    : ROOM_MIN_SIZE
+  maxTries = config.maxTries || dungeonWidth * dungeonHeight * 0.25
   minSpaceBetweenRooms = !config
     ? MIN_SPACE_BETWEEN_ROOMS
     : config.minSpaceBetweenRooms
-      ? config.minSpaceBetweenRooms
-      : MIN_SPACE_BETWEEN_ROOMS
+    ? config.minSpaceBetweenRooms
+    : MIN_SPACE_BETWEEN_ROOMS
   minSpaceBetweenCorridors = !config
     ? MIN_SPACE_BETWEEN_CORRIDORS
     : config.minSpaceBetweenCorridors
-      ? config.minSpaceBetweenCorridors
-      : MIN_SPACE_BETWEEN_CORRIDORS
+    ? config.minSpaceBetweenCorridors
+    : MIN_SPACE_BETWEEN_CORRIDORS
   corridorsWidth = !config
     ? CORRIDORS_WIDTH
     : config.corridorsWidth
-      ? config.corridorsWidth
-      : CORRIDORS_WIDTH
+    ? config.corridorsWidth
+    : CORRIDORS_WIDTH
   roomPassagesCountProb = !config
     ? MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
-    : 'roomPassagesCountProb' in config
-      && config.roomPassagesCountProb < 1
-      && config.roomPassagesCountProb >= 0
-      ? config.roomPassagesCountProb
-      : MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
+    : 'roomPassagesCountProb' in config &&
+      config.roomPassagesCountProb < 1 &&
+      config.roomPassagesCountProb >= 0
+    ? config.roomPassagesCountProb
+    : MORE_THAN_ONE_PASSAGE_IN_ROOM_PROBABILITY
 
   rooms = {}
   corridors = []
@@ -847,8 +893,8 @@ export async function Generator(width, height, config, finishCallback) {
   corridorCells = {}
   zonesChecked = []
 
-  for (let i = 0; i < containerWidth; i++) {
-    for (let j = 0; j < containerHeight; j++) {
+  for (let i = 0; i < dungeonWidth; i++) {
+    for (let j = 0; j < dungeonHeight; j++) {
       emptyCells[buildCellKey([i, j])] = true
     }
   }
