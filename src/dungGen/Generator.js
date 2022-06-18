@@ -816,7 +816,7 @@ const removeCorridorsDeadEnds = () => {
       cellsToRemove = Array.from(walkCorridorFromDeadEndsAndGetCellsToRemove(c))
       cellsToRemove.forEach((mc) => {
         c.removeCell(mc)
-        delete emptyCells[buildCellKey(mc)]
+        emptyCells[buildCellKey(mc)] = true
       })
     }
   })
@@ -833,6 +833,18 @@ export const buildJSONData = () => {
   }
   */
   if (!generator) return undefined
+  Object.values(rooms).forEach((r) => {
+    Object.values(r.passages).forEach((p) => {
+      const key = buildCellKey(p.cell)
+      if (key in emptyCells) delete emptyCells[key]
+    })
+  })
+  corridors.forEach((c) => {
+    Object.values(c.passages).forEach((p) => {
+      const key = buildCellKey(p.cell)
+      if (key in emptyCells) delete emptyCells[key]
+    })
+  })
   return (
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(
